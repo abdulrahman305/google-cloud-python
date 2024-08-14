@@ -180,7 +180,8 @@ class BatchServiceGrpcAsyncIOTransport(BatchServiceTransport):
 
         if isinstance(channel, aio.Channel):
             # Ignore credentials if a channel was passed.
-            credentials = False
+            credentials = None
+            self._ignore_credentials = True
             # If a channel was explicitly provided, set it.
             self._grpc_channel = channel
             self._ssl_channel_credentials = None
@@ -338,6 +339,32 @@ class BatchServiceGrpcAsyncIOTransport(BatchServiceTransport):
                 response_deserializer=operations_pb2.Operation.FromString,
             )
         return self._stubs["delete_job"]
+
+    @property
+    def cancel_job(
+        self,
+    ) -> Callable[[batch.CancelJobRequest], Awaitable[operations_pb2.Operation]]:
+        r"""Return a callable for the cancel job method over gRPC.
+
+        Cancel a Job.
+
+        Returns:
+            Callable[[~.CancelJobRequest],
+                    Awaitable[~.Operation]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "cancel_job" not in self._stubs:
+            self._stubs["cancel_job"] = self.grpc_channel.unary_unary(
+                "/google.cloud.batch.v1alpha.BatchService/CancelJob",
+                request_serializer=batch.CancelJobRequest.serialize,
+                response_deserializer=operations_pb2.Operation.FromString,
+            )
+        return self._stubs["cancel_job"]
 
     @property
     def update_job(self) -> Callable[[batch.UpdateJobRequest], Awaitable[gcb_job.Job]]:
@@ -609,6 +636,11 @@ class BatchServiceGrpcAsyncIOTransport(BatchServiceTransport):
             ),
             self.delete_job: gapic_v1.method_async.wrap_method(
                 self.delete_job,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.cancel_job: gapic_v1.method_async.wrap_method(
+                self.cancel_job,
                 default_timeout=60.0,
                 client_info=client_info,
             ),

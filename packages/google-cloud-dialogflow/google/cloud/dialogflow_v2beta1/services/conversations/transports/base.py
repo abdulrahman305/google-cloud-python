@@ -87,6 +87,8 @@ class ConversationsTransport(abc.ABC):
 
         # Save the scopes.
         self._scopes = scopes
+        if not hasattr(self, "_ignore_credentials"):
+            self._ignore_credentials: bool = False
 
         # If no credentials are provided, then determine the appropriate
         # defaults.
@@ -99,7 +101,7 @@ class ConversationsTransport(abc.ABC):
             credentials, _ = google.auth.load_credentials_from_file(
                 credentials_file, **scopes_kwargs, quota_project_id=quota_project_id
             )
-        elif credentials is None:
+        elif credentials is None and not self._ignore_credentials:
             credentials, _ = google.auth.default(
                 **scopes_kwargs, quota_project_id=quota_project_id
             )
@@ -169,6 +171,11 @@ class ConversationsTransport(abc.ABC):
             ),
             self.generate_stateless_summary: gapic_v1.method.wrap_method(
                 self.generate_stateless_summary,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.generate_stateless_suggestion: gapic_v1.method.wrap_method(
+                self.generate_stateless_suggestion,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -271,6 +278,18 @@ class ConversationsTransport(abc.ABC):
         Union[
             conversation.GenerateStatelessSummaryResponse,
             Awaitable[conversation.GenerateStatelessSummaryResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def generate_stateless_suggestion(
+        self,
+    ) -> Callable[
+        [conversation.GenerateStatelessSuggestionRequest],
+        Union[
+            conversation.GenerateStatelessSuggestionResponse,
+            Awaitable[conversation.GenerateStatelessSuggestionResponse],
         ],
     ]:
         raise NotImplementedError()

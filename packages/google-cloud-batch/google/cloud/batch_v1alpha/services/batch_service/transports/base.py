@@ -90,6 +90,8 @@ class BatchServiceTransport(abc.ABC):
 
         # Save the scopes.
         self._scopes = scopes
+        if not hasattr(self, "_ignore_credentials"):
+            self._ignore_credentials: bool = False
 
         # If no credentials are provided, then determine the appropriate
         # defaults.
@@ -102,7 +104,7 @@ class BatchServiceTransport(abc.ABC):
             credentials, _ = google.auth.load_credentials_from_file(
                 credentials_file, **scopes_kwargs, quota_project_id=quota_project_id
             )
-        elif credentials is None:
+        elif credentials is None and not self._ignore_credentials:
             credentials, _ = google.auth.default(
                 **scopes_kwargs, quota_project_id=quota_project_id
             )
@@ -156,6 +158,11 @@ class BatchServiceTransport(abc.ABC):
             ),
             self.delete_job: gapic_v1.method.wrap_method(
                 self.delete_job,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.cancel_job: gapic_v1.method.wrap_method(
+                self.cancel_job,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
@@ -282,6 +289,15 @@ class BatchServiceTransport(abc.ABC):
         self,
     ) -> Callable[
         [batch.DeleteJobRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def cancel_job(
+        self,
+    ) -> Callable[
+        [batch.CancelJobRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()

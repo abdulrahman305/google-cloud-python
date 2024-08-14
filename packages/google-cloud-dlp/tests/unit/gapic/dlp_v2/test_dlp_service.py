@@ -29,6 +29,7 @@ import math
 from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1248,12 +1249,7 @@ async def test_inspect_content_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.inspect_content
         ] = mock_object
@@ -1537,12 +1533,7 @@ async def test_redact_image_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.redact_image
         ] = mock_object
@@ -1839,12 +1830,7 @@ async def test_deidentify_content_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.deidentify_content
         ] = mock_object
@@ -2142,12 +2128,7 @@ async def test_reidentify_content_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.reidentify_content
         ] = mock_object
@@ -2433,12 +2414,7 @@ async def test_list_info_types_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_info_types
         ] = mock_object
@@ -2761,12 +2737,7 @@ async def test_create_inspect_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_inspect_template
         ] = mock_object
@@ -3169,12 +3140,7 @@ async def test_update_inspect_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_inspect_template
         ] = mock_object
@@ -3586,12 +3552,7 @@ async def test_get_inspect_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_inspect_template
         ] = mock_object
@@ -3984,12 +3945,7 @@ async def test_list_inspect_templates_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_inspect_templates
         ] = mock_object
@@ -4239,12 +4195,16 @@ def test_list_inspect_templates_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_inspect_templates(request={})
+        pager = client.list_inspect_templates(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -4567,12 +4527,7 @@ async def test_delete_inspect_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_inspect_template
         ] = mock_object
@@ -4960,12 +4915,7 @@ async def test_create_deidentify_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_deidentify_template
         ] = mock_object
@@ -5372,12 +5322,7 @@ async def test_update_deidentify_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_deidentify_template
         ] = mock_object
@@ -5794,12 +5739,7 @@ async def test_get_deidentify_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_deidentify_template
         ] = mock_object
@@ -6196,12 +6136,7 @@ async def test_list_deidentify_templates_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_deidentify_templates
         ] = mock_object
@@ -6451,12 +6386,18 @@ def test_list_deidentify_templates_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_deidentify_templates(request={})
+        pager = client.list_deidentify_templates(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -6779,12 +6720,7 @@ async def test_delete_deidentify_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_deidentify_template
         ] = mock_object
@@ -7174,12 +7110,7 @@ async def test_create_job_trigger_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_job_trigger
         ] = mock_object
@@ -7586,12 +7517,7 @@ async def test_update_job_trigger_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_job_trigger
         ] = mock_object
@@ -7995,12 +7921,7 @@ async def test_hybrid_inspect_job_trigger_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.hybrid_inspect_job_trigger
         ] = mock_object
@@ -8380,12 +8301,7 @@ async def test_get_job_trigger_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_job_trigger
         ] = mock_object
@@ -8769,12 +8685,7 @@ async def test_list_job_triggers_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_job_triggers
         ] = mock_object
@@ -9024,12 +8935,16 @@ def test_list_job_triggers_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_job_triggers(request={})
+        pager = client.list_job_triggers(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -9351,12 +9266,7 @@ async def test_delete_job_trigger_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_job_trigger
         ] = mock_object
@@ -9742,12 +9652,7 @@ async def test_activate_job_trigger_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.activate_job_trigger
         ] = mock_object
@@ -10063,12 +9968,7 @@ async def test_create_discovery_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_discovery_config
         ] = mock_object
@@ -10476,12 +10376,7 @@ async def test_update_discovery_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_discovery_config
         ] = mock_object
@@ -10898,12 +10793,7 @@ async def test_get_discovery_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_discovery_config
         ] = mock_object
@@ -11296,12 +11186,7 @@ async def test_list_discovery_configs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_discovery_configs
         ] = mock_object
@@ -11551,12 +11436,16 @@ def test_list_discovery_configs_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_discovery_configs(request={})
+        pager = client.list_discovery_configs(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -11879,12 +11768,7 @@ async def test_delete_discovery_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_discovery_config
         ] = mock_object
@@ -12262,12 +12146,7 @@ async def test_create_dlp_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_dlp_job
         ] = mock_object
@@ -12711,12 +12590,7 @@ async def test_list_dlp_jobs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_dlp_jobs
         ] = mock_object
@@ -12954,12 +12828,16 @@ def test_list_dlp_jobs_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_dlp_jobs(request={})
+        pager = client.list_dlp_jobs(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -13279,12 +13157,7 @@ async def test_get_dlp_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_dlp_job
         ] = mock_object
@@ -13643,12 +13516,7 @@ async def test_delete_dlp_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_dlp_job
         ] = mock_object
@@ -13996,12 +13864,7 @@ async def test_cancel_dlp_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.cancel_dlp_job
         ] = mock_object
@@ -14293,12 +14156,7 @@ async def test_create_stored_info_type_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_stored_info_type
         ] = mock_object
@@ -14691,12 +14549,7 @@ async def test_update_stored_info_type_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_stored_info_type
         ] = mock_object
@@ -15098,12 +14951,7 @@ async def test_get_stored_info_type_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_stored_info_type
         ] = mock_object
@@ -15492,12 +15340,7 @@ async def test_list_stored_info_types_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_stored_info_types
         ] = mock_object
@@ -15747,12 +15590,16 @@ def test_list_stored_info_types_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_stored_info_types(request={})
+        pager = client.list_stored_info_types(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -16075,12 +15922,7 @@ async def test_delete_stored_info_type_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_stored_info_type
         ] = mock_object
@@ -16464,12 +16306,7 @@ async def test_list_project_data_profiles_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_project_data_profiles
         ] = mock_object
@@ -16719,12 +16556,18 @@ def test_list_project_data_profiles_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_project_data_profiles(request={})
+        pager = client.list_project_data_profiles(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -17060,12 +16903,7 @@ async def test_list_table_data_profiles_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_table_data_profiles
         ] = mock_object
@@ -17315,12 +17153,18 @@ def test_list_table_data_profiles_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_table_data_profiles(request={})
+        pager = client.list_table_data_profiles(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -17656,12 +17500,7 @@ async def test_list_column_data_profiles_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_column_data_profiles
         ] = mock_object
@@ -17911,12 +17750,18 @@ def test_list_column_data_profiles_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_column_data_profiles(request={})
+        pager = client.list_column_data_profiles(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -18094,6 +17939,8 @@ def test_get_project_data_profile(request_type, transport: str = "grpc"):
         call.return_value = dlp.ProjectDataProfile(
             name="name_value",
             project_id="project_id_value",
+            table_data_profile_count=2521,
+            file_store_data_profile_count=3069,
         )
         response = client.get_project_data_profile(request)
 
@@ -18107,6 +17954,8 @@ def test_get_project_data_profile(request_type, transport: str = "grpc"):
     assert isinstance(response, dlp.ProjectDataProfile)
     assert response.name == "name_value"
     assert response.project_id == "project_id_value"
+    assert response.table_data_profile_count == 2521
+    assert response.file_store_data_profile_count == 3069
 
 
 def test_get_project_data_profile_empty_call():
@@ -18218,6 +18067,8 @@ async def test_get_project_data_profile_empty_call_async():
             dlp.ProjectDataProfile(
                 name="name_value",
                 project_id="project_id_value",
+                table_data_profile_count=2521,
+                file_store_data_profile_count=3069,
             )
         )
         response = await client.get_project_data_profile()
@@ -18249,12 +18100,7 @@ async def test_get_project_data_profile_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_project_data_profile
         ] = mock_object
@@ -18294,6 +18140,8 @@ async def test_get_project_data_profile_async(
             dlp.ProjectDataProfile(
                 name="name_value",
                 project_id="project_id_value",
+                table_data_profile_count=2521,
+                file_store_data_profile_count=3069,
             )
         )
         response = await client.get_project_data_profile(request)
@@ -18308,6 +18156,8 @@ async def test_get_project_data_profile_async(
     assert isinstance(response, dlp.ProjectDataProfile)
     assert response.name == "name_value"
     assert response.project_id == "project_id_value"
+    assert response.table_data_profile_count == 2521
+    assert response.file_store_data_profile_count == 3069
 
 
 @pytest.mark.asyncio
@@ -18462,6 +18312,1417 @@ async def test_get_project_data_profile_flattened_error_async():
     with pytest.raises(ValueError):
         await client.get_project_data_profile(
             dlp.GetProjectDataProfileRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        dlp.ListFileStoreDataProfilesRequest,
+        dict,
+    ],
+)
+def test_list_file_store_data_profiles(request_type, transport: str = "grpc"):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = dlp.ListFileStoreDataProfilesResponse(
+            next_page_token="next_page_token_value",
+        )
+        response = client.list_file_store_data_profiles(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = dlp.ListFileStoreDataProfilesRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListFileStoreDataProfilesPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+def test_list_file_store_data_profiles_empty_call():
+    # This test is a coverage failsafe to make sure that totally empty calls,
+    # i.e. request == None and no flattened fields passed, work.
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.list_file_store_data_profiles()
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == dlp.ListFileStoreDataProfilesRequest()
+
+
+def test_list_file_store_data_profiles_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = dlp.ListFileStoreDataProfilesRequest(
+        parent="parent_value",
+        page_token="page_token_value",
+        order_by="order_by_value",
+        filter="filter_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.list_file_store_data_profiles(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == dlp.ListFileStoreDataProfilesRequest(
+            parent="parent_value",
+            page_token="page_token_value",
+            order_by="order_by_value",
+            filter="filter_value",
+        )
+
+
+def test_list_file_store_data_profiles_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = DlpServiceClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_file_store_data_profiles
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_file_store_data_profiles
+        ] = mock_rpc
+        request = {}
+        client.list_file_store_data_profiles(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_file_store_data_profiles(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_file_store_data_profiles_empty_call_async():
+    # This test is a coverage failsafe to make sure that totally empty calls,
+    # i.e. request == None and no flattened fields passed, work.
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            dlp.ListFileStoreDataProfilesResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        response = await client.list_file_store_data_profiles()
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == dlp.ListFileStoreDataProfilesRequest()
+
+
+@pytest.mark.asyncio
+async def test_list_file_store_data_profiles_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = DlpServiceAsyncClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.list_file_store_data_profiles
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_object = mock.AsyncMock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.list_file_store_data_profiles
+        ] = mock_object
+
+        request = {}
+        await client.list_file_store_data_profiles(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_object.call_count == 1
+
+        await client.list_file_store_data_profiles(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_object.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_file_store_data_profiles_async(
+    transport: str = "grpc_asyncio", request_type=dlp.ListFileStoreDataProfilesRequest
+):
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            dlp.ListFileStoreDataProfilesResponse(
+                next_page_token="next_page_token_value",
+            )
+        )
+        response = await client.list_file_store_data_profiles(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = dlp.ListFileStoreDataProfilesRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListFileStoreDataProfilesAsyncPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+@pytest.mark.asyncio
+async def test_list_file_store_data_profiles_async_from_dict():
+    await test_list_file_store_data_profiles_async(request_type=dict)
+
+
+def test_list_file_store_data_profiles_field_headers():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = dlp.ListFileStoreDataProfilesRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles), "__call__"
+    ) as call:
+        call.return_value = dlp.ListFileStoreDataProfilesResponse()
+        client.list_file_store_data_profiles(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_list_file_store_data_profiles_field_headers_async():
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = dlp.ListFileStoreDataProfilesRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            dlp.ListFileStoreDataProfilesResponse()
+        )
+        await client.list_file_store_data_profiles(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+def test_list_file_store_data_profiles_flattened():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = dlp.ListFileStoreDataProfilesResponse()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.list_file_store_data_profiles(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+def test_list_file_store_data_profiles_flattened_error():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_file_store_data_profiles(
+            dlp.ListFileStoreDataProfilesRequest(),
+            parent="parent_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_list_file_store_data_profiles_flattened_async():
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = dlp.ListFileStoreDataProfilesResponse()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            dlp.ListFileStoreDataProfilesResponse()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.list_file_store_data_profiles(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_list_file_store_data_profiles_flattened_error_async():
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.list_file_store_data_profiles(
+            dlp.ListFileStoreDataProfilesRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_file_store_data_profiles_pager(transport_name: str = "grpc"):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                ],
+                next_page_token="abc",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[],
+                next_page_token="def",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                ],
+                next_page_token="ghi",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                ],
+            ),
+            RuntimeError,
+        )
+
+        expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
+        expected_metadata = tuple(expected_metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
+        )
+        pager = client.list_file_store_data_profiles(
+            request={}, retry=retry, timeout=timeout
+        )
+
+        assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, dlp.FileStoreDataProfile) for i in results)
+
+
+def test_list_file_store_data_profiles_pages(transport_name: str = "grpc"):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                ],
+                next_page_token="abc",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[],
+                next_page_token="def",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                ],
+                next_page_token="ghi",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = list(client.list_file_store_data_profiles(request={}).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.asyncio
+async def test_list_file_store_data_profiles_async_pager():
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                ],
+                next_page_token="abc",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[],
+                next_page_token="def",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                ],
+                next_page_token="ghi",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                ],
+            ),
+            RuntimeError,
+        )
+        async_pager = await client.list_file_store_data_profiles(
+            request={},
+        )
+        assert async_pager.next_page_token == "abc"
+        responses = []
+        async for response in async_pager:  # pragma: no branch
+            responses.append(response)
+
+        assert len(responses) == 6
+        assert all(isinstance(i, dlp.FileStoreDataProfile) for i in responses)
+
+
+@pytest.mark.asyncio
+async def test_list_file_store_data_profiles_async_pages():
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_file_store_data_profiles),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                ],
+                next_page_token="abc",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[],
+                next_page_token="def",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                ],
+                next_page_token="ghi",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = []
+        # Workaround issue in python 3.9 related to code coverage by adding `# pragma: no branch`
+        # See https://github.com/googleapis/gapic-generator-python/pull/1174#issuecomment-1025132372
+        async for page_ in (  # pragma: no branch
+            await client.list_file_store_data_profiles(request={})
+        ).pages:
+            pages.append(page_)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        dlp.GetFileStoreDataProfileRequest,
+        dict,
+    ],
+)
+def test_get_file_store_data_profile(request_type, transport: str = "grpc"):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_file_store_data_profile), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = dlp.FileStoreDataProfile(
+            name="name_value",
+            project_data_profile="project_data_profile_value",
+            project_id="project_id_value",
+            file_store_location="file_store_location_value",
+            data_storage_locations=["data_storage_locations_value"],
+            location_type="location_type_value",
+            file_store_path="file_store_path_value",
+            full_resource="full_resource_value",
+            state=dlp.FileStoreDataProfile.State.RUNNING,
+            resource_visibility=dlp.ResourceVisibility.RESOURCE_VISIBILITY_PUBLIC,
+            file_store_is_empty=True,
+        )
+        response = client.get_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = dlp.GetFileStoreDataProfileRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, dlp.FileStoreDataProfile)
+    assert response.name == "name_value"
+    assert response.project_data_profile == "project_data_profile_value"
+    assert response.project_id == "project_id_value"
+    assert response.file_store_location == "file_store_location_value"
+    assert response.data_storage_locations == ["data_storage_locations_value"]
+    assert response.location_type == "location_type_value"
+    assert response.file_store_path == "file_store_path_value"
+    assert response.full_resource == "full_resource_value"
+    assert response.state == dlp.FileStoreDataProfile.State.RUNNING
+    assert (
+        response.resource_visibility
+        == dlp.ResourceVisibility.RESOURCE_VISIBILITY_PUBLIC
+    )
+    assert response.file_store_is_empty is True
+
+
+def test_get_file_store_data_profile_empty_call():
+    # This test is a coverage failsafe to make sure that totally empty calls,
+    # i.e. request == None and no flattened fields passed, work.
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_file_store_data_profile), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.get_file_store_data_profile()
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == dlp.GetFileStoreDataProfileRequest()
+
+
+def test_get_file_store_data_profile_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = dlp.GetFileStoreDataProfileRequest(
+        name="name_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_file_store_data_profile), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.get_file_store_data_profile(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == dlp.GetFileStoreDataProfileRequest(
+            name="name_value",
+        )
+
+
+def test_get_file_store_data_profile_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = DlpServiceClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_file_store_data_profile
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_file_store_data_profile
+        ] = mock_rpc
+        request = {}
+        client.get_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_file_store_data_profile(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_file_store_data_profile_empty_call_async():
+    # This test is a coverage failsafe to make sure that totally empty calls,
+    # i.e. request == None and no flattened fields passed, work.
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_file_store_data_profile), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            dlp.FileStoreDataProfile(
+                name="name_value",
+                project_data_profile="project_data_profile_value",
+                project_id="project_id_value",
+                file_store_location="file_store_location_value",
+                data_storage_locations=["data_storage_locations_value"],
+                location_type="location_type_value",
+                file_store_path="file_store_path_value",
+                full_resource="full_resource_value",
+                state=dlp.FileStoreDataProfile.State.RUNNING,
+                resource_visibility=dlp.ResourceVisibility.RESOURCE_VISIBILITY_PUBLIC,
+                file_store_is_empty=True,
+            )
+        )
+        response = await client.get_file_store_data_profile()
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == dlp.GetFileStoreDataProfileRequest()
+
+
+@pytest.mark.asyncio
+async def test_get_file_store_data_profile_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = DlpServiceAsyncClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.get_file_store_data_profile
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_object = mock.AsyncMock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.get_file_store_data_profile
+        ] = mock_object
+
+        request = {}
+        await client.get_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_object.call_count == 1
+
+        await client.get_file_store_data_profile(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_object.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_file_store_data_profile_async(
+    transport: str = "grpc_asyncio", request_type=dlp.GetFileStoreDataProfileRequest
+):
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_file_store_data_profile), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            dlp.FileStoreDataProfile(
+                name="name_value",
+                project_data_profile="project_data_profile_value",
+                project_id="project_id_value",
+                file_store_location="file_store_location_value",
+                data_storage_locations=["data_storage_locations_value"],
+                location_type="location_type_value",
+                file_store_path="file_store_path_value",
+                full_resource="full_resource_value",
+                state=dlp.FileStoreDataProfile.State.RUNNING,
+                resource_visibility=dlp.ResourceVisibility.RESOURCE_VISIBILITY_PUBLIC,
+                file_store_is_empty=True,
+            )
+        )
+        response = await client.get_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = dlp.GetFileStoreDataProfileRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, dlp.FileStoreDataProfile)
+    assert response.name == "name_value"
+    assert response.project_data_profile == "project_data_profile_value"
+    assert response.project_id == "project_id_value"
+    assert response.file_store_location == "file_store_location_value"
+    assert response.data_storage_locations == ["data_storage_locations_value"]
+    assert response.location_type == "location_type_value"
+    assert response.file_store_path == "file_store_path_value"
+    assert response.full_resource == "full_resource_value"
+    assert response.state == dlp.FileStoreDataProfile.State.RUNNING
+    assert (
+        response.resource_visibility
+        == dlp.ResourceVisibility.RESOURCE_VISIBILITY_PUBLIC
+    )
+    assert response.file_store_is_empty is True
+
+
+@pytest.mark.asyncio
+async def test_get_file_store_data_profile_async_from_dict():
+    await test_get_file_store_data_profile_async(request_type=dict)
+
+
+def test_get_file_store_data_profile_field_headers():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = dlp.GetFileStoreDataProfileRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_file_store_data_profile), "__call__"
+    ) as call:
+        call.return_value = dlp.FileStoreDataProfile()
+        client.get_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_get_file_store_data_profile_field_headers_async():
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = dlp.GetFileStoreDataProfileRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_file_store_data_profile), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            dlp.FileStoreDataProfile()
+        )
+        await client.get_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_get_file_store_data_profile_flattened():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_file_store_data_profile), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = dlp.FileStoreDataProfile()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.get_file_store_data_profile(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+def test_get_file_store_data_profile_flattened_error():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_file_store_data_profile(
+            dlp.GetFileStoreDataProfileRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_file_store_data_profile_flattened_async():
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_file_store_data_profile), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = dlp.FileStoreDataProfile()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            dlp.FileStoreDataProfile()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.get_file_store_data_profile(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_get_file_store_data_profile_flattened_error_async():
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.get_file_store_data_profile(
+            dlp.GetFileStoreDataProfileRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        dlp.DeleteFileStoreDataProfileRequest,
+        dict,
+    ],
+)
+def test_delete_file_store_data_profile(request_type, transport: str = "grpc"):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_file_store_data_profile), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = None
+        response = client.delete_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = dlp.DeleteFileStoreDataProfileRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+def test_delete_file_store_data_profile_empty_call():
+    # This test is a coverage failsafe to make sure that totally empty calls,
+    # i.e. request == None and no flattened fields passed, work.
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_file_store_data_profile), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.delete_file_store_data_profile()
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == dlp.DeleteFileStoreDataProfileRequest()
+
+
+def test_delete_file_store_data_profile_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = dlp.DeleteFileStoreDataProfileRequest(
+        name="name_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_file_store_data_profile), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.delete_file_store_data_profile(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == dlp.DeleteFileStoreDataProfileRequest(
+            name="name_value",
+        )
+
+
+def test_delete_file_store_data_profile_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = DlpServiceClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.delete_file_store_data_profile
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.delete_file_store_data_profile
+        ] = mock_rpc
+        request = {}
+        client.delete_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.delete_file_store_data_profile(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_delete_file_store_data_profile_empty_call_async():
+    # This test is a coverage failsafe to make sure that totally empty calls,
+    # i.e. request == None and no flattened fields passed, work.
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_file_store_data_profile), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        response = await client.delete_file_store_data_profile()
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == dlp.DeleteFileStoreDataProfileRequest()
+
+
+@pytest.mark.asyncio
+async def test_delete_file_store_data_profile_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = DlpServiceAsyncClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.delete_file_store_data_profile
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_object = mock.AsyncMock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.delete_file_store_data_profile
+        ] = mock_object
+
+        request = {}
+        await client.delete_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_object.call_count == 1
+
+        await client.delete_file_store_data_profile(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_object.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_delete_file_store_data_profile_async(
+    transport: str = "grpc_asyncio", request_type=dlp.DeleteFileStoreDataProfileRequest
+):
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_file_store_data_profile), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        response = await client.delete_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = dlp.DeleteFileStoreDataProfileRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+@pytest.mark.asyncio
+async def test_delete_file_store_data_profile_async_from_dict():
+    await test_delete_file_store_data_profile_async(request_type=dict)
+
+
+def test_delete_file_store_data_profile_field_headers():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = dlp.DeleteFileStoreDataProfileRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_file_store_data_profile), "__call__"
+    ) as call:
+        call.return_value = None
+        client.delete_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_delete_file_store_data_profile_field_headers_async():
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = dlp.DeleteFileStoreDataProfileRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_file_store_data_profile), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        await client.delete_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_delete_file_store_data_profile_flattened():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_file_store_data_profile), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = None
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.delete_file_store_data_profile(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+def test_delete_file_store_data_profile_flattened_error():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.delete_file_store_data_profile(
+            dlp.DeleteFileStoreDataProfileRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_delete_file_store_data_profile_flattened_async():
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_file_store_data_profile), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = None
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(None)
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.delete_file_store_data_profile(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_delete_file_store_data_profile_flattened_error_async():
+    client = DlpServiceAsyncClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.delete_file_store_data_profile(
+            dlp.DeleteFileStoreDataProfileRequest(),
             name="name_value",
         )
 
@@ -18685,12 +19946,7 @@ async def test_get_table_data_profile_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_table_data_profile
         ] = mock_object
@@ -19154,12 +20410,7 @@ async def test_get_column_data_profile_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_column_data_profile
         ] = mock_object
@@ -19574,12 +20825,7 @@ async def test_delete_table_data_profile_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_table_data_profile
         ] = mock_object
@@ -19952,12 +21198,7 @@ async def test_hybrid_inspect_dlp_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.hybrid_inspect_dlp_job
         ] = mock_object
@@ -20321,12 +21562,7 @@ async def test_finish_dlp_job_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.finish_dlp_job
         ] = mock_object
@@ -20614,12 +21850,7 @@ async def test_create_connection_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_connection
         ] = mock_object
@@ -21004,12 +22235,7 @@ async def test_get_connection_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_connection
         ] = mock_object
@@ -21377,12 +22603,7 @@ async def test_list_connections_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_connections
         ] = mock_object
@@ -21620,12 +22841,16 @@ def test_list_connections_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_connections(request={})
+        pager = client.list_connections(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -21952,12 +23177,7 @@ async def test_search_connections_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.search_connections
         ] = mock_object
@@ -22207,12 +23427,16 @@ def test_search_connections_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.search_connections(request={})
+        pager = client.search_connections(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -22532,12 +23756,7 @@ async def test_delete_connection_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_connection
         ] = mock_object
@@ -22915,12 +24134,7 @@ async def test_update_connection_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_connection
         ] = mock_object
@@ -24084,7 +25298,7 @@ def test_create_inspect_template_rest(request_type):
     )
 
     # send a request that will satisfy transcoding
-    request_init = {"parent": "organizations/sample1"}
+    request_init = {"parent": "projects/sample1/locations/sample2"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a response.
@@ -24311,7 +25525,7 @@ def test_create_inspect_template_rest_bad_request(
     )
 
     # send a request that will satisfy transcoding
-    request_init = {"parent": "organizations/sample1"}
+    request_init = {"parent": "projects/sample1/locations/sample2"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -24338,7 +25552,7 @@ def test_create_inspect_template_rest_flattened():
         return_value = dlp.InspectTemplate()
 
         # get arguments that satisfy an http rule for this method
-        sample_request = {"parent": "organizations/sample1"}
+        sample_request = {"parent": "projects/sample1/locations/sample2"}
 
         # get truthy value for each flattened field
         mock_args = dict(
@@ -24363,7 +25577,8 @@ def test_create_inspect_template_rest_flattened():
         assert len(req.mock_calls) == 1
         _, args, _ = req.mock_calls[0]
         assert path_template.validate(
-            "%s/v2/{parent=organizations/*}/inspectTemplates" % client.transport._host,
+            "%s/v2/{parent=projects/*/locations/*}/inspectTemplates"
+            % client.transport._host,
             args[1],
         )
 
@@ -24404,7 +25619,9 @@ def test_update_inspect_template_rest(request_type):
     )
 
     # send a request that will satisfy transcoding
-    request_init = {"name": "organizations/sample1/inspectTemplates/sample2"}
+    request_init = {
+        "name": "projects/sample1/locations/sample2/inspectTemplates/sample3"
+    }
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a response.
@@ -24623,7 +25840,9 @@ def test_update_inspect_template_rest_bad_request(
     )
 
     # send a request that will satisfy transcoding
-    request_init = {"name": "organizations/sample1/inspectTemplates/sample2"}
+    request_init = {
+        "name": "projects/sample1/locations/sample2/inspectTemplates/sample3"
+    }
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -24650,7 +25869,9 @@ def test_update_inspect_template_rest_flattened():
         return_value = dlp.InspectTemplate()
 
         # get arguments that satisfy an http rule for this method
-        sample_request = {"name": "organizations/sample1/inspectTemplates/sample2"}
+        sample_request = {
+            "name": "projects/sample1/locations/sample2/inspectTemplates/sample3"
+        }
 
         # get truthy value for each flattened field
         mock_args = dict(
@@ -24676,7 +25897,8 @@ def test_update_inspect_template_rest_flattened():
         assert len(req.mock_calls) == 1
         _, args, _ = req.mock_calls[0]
         assert path_template.validate(
-            "%s/v2/{name=organizations/*/inspectTemplates/*}" % client.transport._host,
+            "%s/v2/{name=projects/*/locations/*/inspectTemplates/*}"
+            % client.transport._host,
             args[1],
         )
 
@@ -24718,7 +25940,9 @@ def test_get_inspect_template_rest(request_type):
     )
 
     # send a request that will satisfy transcoding
-    request_init = {"name": "organizations/sample1/inspectTemplates/sample2"}
+    request_init = {
+        "name": "projects/sample1/locations/sample2/inspectTemplates/sample3"
+    }
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a response.
@@ -24933,7 +26157,9 @@ def test_get_inspect_template_rest_bad_request(
     )
 
     # send a request that will satisfy transcoding
-    request_init = {"name": "organizations/sample1/inspectTemplates/sample2"}
+    request_init = {
+        "name": "projects/sample1/locations/sample2/inspectTemplates/sample3"
+    }
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -24960,7 +26186,9 @@ def test_get_inspect_template_rest_flattened():
         return_value = dlp.InspectTemplate()
 
         # get arguments that satisfy an http rule for this method
-        sample_request = {"name": "organizations/sample1/inspectTemplates/sample2"}
+        sample_request = {
+            "name": "projects/sample1/locations/sample2/inspectTemplates/sample3"
+        }
 
         # get truthy value for each flattened field
         mock_args = dict(
@@ -24984,7 +26212,8 @@ def test_get_inspect_template_rest_flattened():
         assert len(req.mock_calls) == 1
         _, args, _ = req.mock_calls[0]
         assert path_template.validate(
-            "%s/v2/{name=organizations/*/inspectTemplates/*}" % client.transport._host,
+            "%s/v2/{name=projects/*/locations/*/inspectTemplates/*}"
+            % client.transport._host,
             args[1],
         )
 
@@ -25024,7 +26253,7 @@ def test_list_inspect_templates_rest(request_type):
     )
 
     # send a request that will satisfy transcoding
-    request_init = {"parent": "organizations/sample1"}
+    request_init = {"parent": "projects/sample1/locations/sample2"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a response.
@@ -25259,7 +26488,7 @@ def test_list_inspect_templates_rest_bad_request(
     )
 
     # send a request that will satisfy transcoding
-    request_init = {"parent": "organizations/sample1"}
+    request_init = {"parent": "projects/sample1/locations/sample2"}
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -25286,7 +26515,7 @@ def test_list_inspect_templates_rest_flattened():
         return_value = dlp.ListInspectTemplatesResponse()
 
         # get arguments that satisfy an http rule for this method
-        sample_request = {"parent": "organizations/sample1"}
+        sample_request = {"parent": "projects/sample1/locations/sample2"}
 
         # get truthy value for each flattened field
         mock_args = dict(
@@ -25310,7 +26539,8 @@ def test_list_inspect_templates_rest_flattened():
         assert len(req.mock_calls) == 1
         _, args, _ = req.mock_calls[0]
         assert path_template.validate(
-            "%s/v2/{parent=organizations/*}/inspectTemplates" % client.transport._host,
+            "%s/v2/{parent=projects/*/locations/*}/inspectTemplates"
+            % client.transport._host,
             args[1],
         )
 
@@ -25378,7 +26608,7 @@ def test_list_inspect_templates_rest_pager(transport: str = "rest"):
             return_val.status_code = 200
         req.side_effect = return_values
 
-        sample_request = {"parent": "organizations/sample1"}
+        sample_request = {"parent": "projects/sample1/locations/sample2"}
 
         pager = client.list_inspect_templates(request=sample_request)
 
@@ -25405,7 +26635,9 @@ def test_delete_inspect_template_rest(request_type):
     )
 
     # send a request that will satisfy transcoding
-    request_init = {"name": "organizations/sample1/inspectTemplates/sample2"}
+    request_init = {
+        "name": "projects/sample1/locations/sample2/inspectTemplates/sample3"
+    }
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a response.
@@ -25605,7 +26837,9 @@ def test_delete_inspect_template_rest_bad_request(
     )
 
     # send a request that will satisfy transcoding
-    request_init = {"name": "organizations/sample1/inspectTemplates/sample2"}
+    request_init = {
+        "name": "projects/sample1/locations/sample2/inspectTemplates/sample3"
+    }
     request = request_type(**request_init)
 
     # Mock the http request call within the method and fake a BadRequest error.
@@ -25632,7 +26866,9 @@ def test_delete_inspect_template_rest_flattened():
         return_value = None
 
         # get arguments that satisfy an http rule for this method
-        sample_request = {"name": "organizations/sample1/inspectTemplates/sample2"}
+        sample_request = {
+            "name": "projects/sample1/locations/sample2/inspectTemplates/sample3"
+        }
 
         # get truthy value for each flattened field
         mock_args = dict(
@@ -25654,7 +26890,8 @@ def test_delete_inspect_template_rest_flattened():
         assert len(req.mock_calls) == 1
         _, args, _ = req.mock_calls[0]
         assert path_template.validate(
-            "%s/v2/{name=organizations/*/inspectTemplates/*}" % client.transport._host,
+            "%s/v2/{name=projects/*/locations/*/inspectTemplates/*}"
+            % client.transport._host,
             args[1],
         )
 
@@ -35376,6 +36613,8 @@ def test_get_project_data_profile_rest(request_type):
         return_value = dlp.ProjectDataProfile(
             name="name_value",
             project_id="project_id_value",
+            table_data_profile_count=2521,
+            file_store_data_profile_count=3069,
         )
 
         # Wrap the value into a proper Response obj
@@ -35393,6 +36632,8 @@ def test_get_project_data_profile_rest(request_type):
     assert isinstance(response, dlp.ProjectDataProfile)
     assert response.name == "name_value"
     assert response.project_id == "project_id_value"
+    assert response.table_data_profile_count == 2521
+    assert response.file_store_data_profile_count == 3069
 
 
 def test_get_project_data_profile_rest_use_cached_wrapped_rpc():
@@ -35662,6 +36903,1027 @@ def test_get_project_data_profile_rest_flattened_error(transport: str = "rest"):
 
 
 def test_get_project_data_profile_rest_error():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        dlp.ListFileStoreDataProfilesRequest,
+        dict,
+    ],
+)
+def test_list_file_store_data_profiles_rest(request_type):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "organizations/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = dlp.ListFileStoreDataProfilesResponse(
+            next_page_token="next_page_token_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = dlp.ListFileStoreDataProfilesResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        response = client.list_file_store_data_profiles(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListFileStoreDataProfilesPager)
+    assert response.next_page_token == "next_page_token_value"
+
+
+def test_list_file_store_data_profiles_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = DlpServiceClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_file_store_data_profiles
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_file_store_data_profiles
+        ] = mock_rpc
+
+        request = {}
+        client.list_file_store_data_profiles(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_file_store_data_profiles(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_file_store_data_profiles_rest_required_fields(
+    request_type=dlp.ListFileStoreDataProfilesRequest,
+):
+    transport_class = transports.DlpServiceRestTransport
+
+    request_init = {}
+    request_init["parent"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_file_store_data_profiles._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["parent"] = "parent_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_file_store_data_profiles._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(
+        (
+            "filter",
+            "order_by",
+            "page_size",
+            "page_token",
+        )
+    )
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "parent" in jsonified_request
+    assert jsonified_request["parent"] == "parent_value"
+
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = dlp.ListFileStoreDataProfilesResponse()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = dlp.ListFileStoreDataProfilesResponse.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+
+            response = client.list_file_store_data_profiles(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_list_file_store_data_profiles_rest_unset_required_fields():
+    transport = transports.DlpServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.list_file_store_data_profiles._get_unset_required_fields(
+        {}
+    )
+    assert set(unset_fields) == (
+        set(
+            (
+                "filter",
+                "orderBy",
+                "pageSize",
+                "pageToken",
+            )
+        )
+        & set(("parent",))
+    )
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_file_store_data_profiles_rest_interceptors(null_interceptor):
+    transport = transports.DlpServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DlpServiceRestInterceptor(),
+    )
+    client = DlpServiceClient(transport=transport)
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DlpServiceRestInterceptor, "post_list_file_store_data_profiles"
+    ) as post, mock.patch.object(
+        transports.DlpServiceRestInterceptor, "pre_list_file_store_data_profiles"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = dlp.ListFileStoreDataProfilesRequest.pb(
+            dlp.ListFileStoreDataProfilesRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = Response()
+        req.return_value.status_code = 200
+        req.return_value.request = PreparedRequest()
+        req.return_value._content = dlp.ListFileStoreDataProfilesResponse.to_json(
+            dlp.ListFileStoreDataProfilesResponse()
+        )
+
+        request = dlp.ListFileStoreDataProfilesRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = dlp.ListFileStoreDataProfilesResponse()
+
+        client.list_file_store_data_profiles(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_list_file_store_data_profiles_rest_bad_request(
+    transport: str = "rest", request_type=dlp.ListFileStoreDataProfilesRequest
+):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "organizations/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        client.list_file_store_data_profiles(request)
+
+
+def test_list_file_store_data_profiles_rest_flattened():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = dlp.ListFileStoreDataProfilesResponse()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"parent": "organizations/sample1/locations/sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            parent="parent_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = dlp.ListFileStoreDataProfilesResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+
+        client.list_file_store_data_profiles(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v2/{parent=organizations/*/locations/*}/fileStoreDataProfiles"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_list_file_store_data_profiles_rest_flattened_error(transport: str = "rest"):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_file_store_data_profiles(
+            dlp.ListFileStoreDataProfilesRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_file_store_data_profiles_rest_pager(transport: str = "rest"):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # TODO(kbandes): remove this mock unless there's a good reason for it.
+        # with mock.patch.object(path_template, 'transcode') as transcode:
+        # Set the response as a series of pages
+        response = (
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                ],
+                next_page_token="abc",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[],
+                next_page_token="def",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                ],
+                next_page_token="ghi",
+            ),
+            dlp.ListFileStoreDataProfilesResponse(
+                file_store_data_profiles=[
+                    dlp.FileStoreDataProfile(),
+                    dlp.FileStoreDataProfile(),
+                ],
+            ),
+        )
+        # Two responses for two calls
+        response = response + response
+
+        # Wrap the values into proper Response objs
+        response = tuple(
+            dlp.ListFileStoreDataProfilesResponse.to_json(x) for x in response
+        )
+        return_values = tuple(Response() for i in response)
+        for return_val, response_val in zip(return_values, response):
+            return_val._content = response_val.encode("UTF-8")
+            return_val.status_code = 200
+        req.side_effect = return_values
+
+        sample_request = {"parent": "organizations/sample1/locations/sample2"}
+
+        pager = client.list_file_store_data_profiles(request=sample_request)
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, dlp.FileStoreDataProfile) for i in results)
+
+        pages = list(client.list_file_store_data_profiles(request=sample_request).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        dlp.GetFileStoreDataProfileRequest,
+        dict,
+    ],
+)
+def test_get_file_store_data_profile_rest(request_type):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "organizations/sample1/locations/sample2/fileStoreDataProfiles/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = dlp.FileStoreDataProfile(
+            name="name_value",
+            project_data_profile="project_data_profile_value",
+            project_id="project_id_value",
+            file_store_location="file_store_location_value",
+            data_storage_locations=["data_storage_locations_value"],
+            location_type="location_type_value",
+            file_store_path="file_store_path_value",
+            full_resource="full_resource_value",
+            state=dlp.FileStoreDataProfile.State.RUNNING,
+            resource_visibility=dlp.ResourceVisibility.RESOURCE_VISIBILITY_PUBLIC,
+            file_store_is_empty=True,
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = dlp.FileStoreDataProfile.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        response = client.get_file_store_data_profile(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, dlp.FileStoreDataProfile)
+    assert response.name == "name_value"
+    assert response.project_data_profile == "project_data_profile_value"
+    assert response.project_id == "project_id_value"
+    assert response.file_store_location == "file_store_location_value"
+    assert response.data_storage_locations == ["data_storage_locations_value"]
+    assert response.location_type == "location_type_value"
+    assert response.file_store_path == "file_store_path_value"
+    assert response.full_resource == "full_resource_value"
+    assert response.state == dlp.FileStoreDataProfile.State.RUNNING
+    assert (
+        response.resource_visibility
+        == dlp.ResourceVisibility.RESOURCE_VISIBILITY_PUBLIC
+    )
+    assert response.file_store_is_empty is True
+
+
+def test_get_file_store_data_profile_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = DlpServiceClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_file_store_data_profile
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_file_store_data_profile
+        ] = mock_rpc
+
+        request = {}
+        client.get_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_file_store_data_profile(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_get_file_store_data_profile_rest_required_fields(
+    request_type=dlp.GetFileStoreDataProfileRequest,
+):
+    transport_class = transports.DlpServiceRestTransport
+
+    request_init = {}
+    request_init["name"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_file_store_data_profile._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["name"] = "name_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_file_store_data_profile._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "name" in jsonified_request
+    assert jsonified_request["name"] == "name_value"
+
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = dlp.FileStoreDataProfile()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = dlp.FileStoreDataProfile.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+
+            response = client.get_file_store_data_profile(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_get_file_store_data_profile_rest_unset_required_fields():
+    transport = transports.DlpServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.get_file_store_data_profile._get_unset_required_fields({})
+    assert set(unset_fields) == (set(()) & set(("name",)))
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_file_store_data_profile_rest_interceptors(null_interceptor):
+    transport = transports.DlpServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DlpServiceRestInterceptor(),
+    )
+    client = DlpServiceClient(transport=transport)
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DlpServiceRestInterceptor, "post_get_file_store_data_profile"
+    ) as post, mock.patch.object(
+        transports.DlpServiceRestInterceptor, "pre_get_file_store_data_profile"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        pb_message = dlp.GetFileStoreDataProfileRequest.pb(
+            dlp.GetFileStoreDataProfileRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = Response()
+        req.return_value.status_code = 200
+        req.return_value.request = PreparedRequest()
+        req.return_value._content = dlp.FileStoreDataProfile.to_json(
+            dlp.FileStoreDataProfile()
+        )
+
+        request = dlp.GetFileStoreDataProfileRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = dlp.FileStoreDataProfile()
+
+        client.get_file_store_data_profile(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+
+
+def test_get_file_store_data_profile_rest_bad_request(
+    transport: str = "rest", request_type=dlp.GetFileStoreDataProfileRequest
+):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "organizations/sample1/locations/sample2/fileStoreDataProfiles/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        client.get_file_store_data_profile(request)
+
+
+def test_get_file_store_data_profile_rest_flattened():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = dlp.FileStoreDataProfile()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "name": "organizations/sample1/locations/sample2/fileStoreDataProfiles/sample3"
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = dlp.FileStoreDataProfile.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+
+        client.get_file_store_data_profile(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v2/{name=organizations/*/locations/*/fileStoreDataProfiles/*}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_get_file_store_data_profile_rest_flattened_error(transport: str = "rest"):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_file_store_data_profile(
+            dlp.GetFileStoreDataProfileRequest(),
+            name="name_value",
+        )
+
+
+def test_get_file_store_data_profile_rest_error():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        dlp.DeleteFileStoreDataProfileRequest,
+        dict,
+    ],
+)
+def test_delete_file_store_data_profile_rest(request_type):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "organizations/sample1/locations/sample2/fileStoreDataProfiles/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        json_return_value = ""
+
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        response = client.delete_file_store_data_profile(request)
+
+    # Establish that the response is the type that we expect.
+    assert response is None
+
+
+def test_delete_file_store_data_profile_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = DlpServiceClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.delete_file_store_data_profile
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.delete_file_store_data_profile
+        ] = mock_rpc
+
+        request = {}
+        client.delete_file_store_data_profile(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.delete_file_store_data_profile(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_delete_file_store_data_profile_rest_required_fields(
+    request_type=dlp.DeleteFileStoreDataProfileRequest,
+):
+    transport_class = transports.DlpServiceRestTransport
+
+    request_init = {}
+    request_init["name"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).delete_file_store_data_profile._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["name"] = "name_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).delete_file_store_data_profile._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "name" in jsonified_request
+    assert jsonified_request["name"] == "name_value"
+
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = None
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "delete",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+            json_return_value = ""
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+
+            response = client.delete_file_store_data_profile(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_delete_file_store_data_profile_rest_unset_required_fields():
+    transport = transports.DlpServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.delete_file_store_data_profile._get_unset_required_fields(
+        {}
+    )
+    assert set(unset_fields) == (set(()) & set(("name",)))
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_file_store_data_profile_rest_interceptors(null_interceptor):
+    transport = transports.DlpServiceRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.DlpServiceRestInterceptor(),
+    )
+    client = DlpServiceClient(transport=transport)
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.DlpServiceRestInterceptor, "pre_delete_file_store_data_profile"
+    ) as pre:
+        pre.assert_not_called()
+        pb_message = dlp.DeleteFileStoreDataProfileRequest.pb(
+            dlp.DeleteFileStoreDataProfileRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = Response()
+        req.return_value.status_code = 200
+        req.return_value.request = PreparedRequest()
+
+        request = dlp.DeleteFileStoreDataProfileRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+
+        client.delete_file_store_data_profile(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+
+
+def test_delete_file_store_data_profile_rest_bad_request(
+    transport: str = "rest", request_type=dlp.DeleteFileStoreDataProfileRequest
+):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "organizations/sample1/locations/sample2/fileStoreDataProfiles/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 400
+        response_value.request = Request()
+        req.return_value = response_value
+        client.delete_file_store_data_profile(request)
+
+
+def test_delete_file_store_data_profile_rest_flattened():
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = None
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "name": "organizations/sample1/locations/sample2/fileStoreDataProfiles/sample3"
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        json_return_value = ""
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+
+        client.delete_file_store_data_profile(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v2/{name=organizations/*/locations/*/fileStoreDataProfiles/*}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_delete_file_store_data_profile_rest_flattened_error(transport: str = "rest"):
+    client = DlpServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.delete_file_store_data_profile(
+            dlp.DeleteFileStoreDataProfileRequest(),
+            name="name_value",
+        )
+
+
+def test_delete_file_store_data_profile_rest_error():
     client = DlpServiceClient(
         credentials=ga_credentials.AnonymousCredentials(), transport="rest"
     )
@@ -39328,6 +41590,9 @@ def test_dlp_service_base_transport():
         "list_table_data_profiles",
         "list_column_data_profiles",
         "get_project_data_profile",
+        "list_file_store_data_profiles",
+        "get_file_store_data_profile",
+        "delete_file_store_data_profile",
         "get_table_data_profile",
         "get_column_data_profile",
         "delete_table_data_profile",
@@ -39715,6 +41980,15 @@ def test_dlp_service_client_transport_session_collision(transport_name):
     session1 = client1.transport.get_project_data_profile._session
     session2 = client2.transport.get_project_data_profile._session
     assert session1 != session2
+    session1 = client1.transport.list_file_store_data_profiles._session
+    session2 = client2.transport.list_file_store_data_profiles._session
+    assert session1 != session2
+    session1 = client1.transport.get_file_store_data_profile._session
+    session2 = client2.transport.get_file_store_data_profile._session
+    assert session1 != session2
+    session1 = client1.transport.delete_file_store_data_profile._session
+    session2 = client2.transport.delete_file_store_data_profile._session
+    assert session1 != session2
     session1 = client1.transport.get_table_data_profile._session
     session2 = client2.transport.get_table_data_profile._session
     assert session1 != session2
@@ -40020,10 +42294,38 @@ def test_parse_dlp_job_path():
     assert expected == actual
 
 
-def test_finding_path():
-    project = "oyster"
+def test_file_store_data_profile_path():
+    organization = "oyster"
     location = "nudibranch"
-    finding = "cuttlefish"
+    file_store_data_profile = "cuttlefish"
+    expected = "organizations/{organization}/locations/{location}/fileStoreDataProfiles/{file_store_data_profile}".format(
+        organization=organization,
+        location=location,
+        file_store_data_profile=file_store_data_profile,
+    )
+    actual = DlpServiceClient.file_store_data_profile_path(
+        organization, location, file_store_data_profile
+    )
+    assert expected == actual
+
+
+def test_parse_file_store_data_profile_path():
+    expected = {
+        "organization": "mussel",
+        "location": "winkle",
+        "file_store_data_profile": "nautilus",
+    }
+    path = DlpServiceClient.file_store_data_profile_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = DlpServiceClient.parse_file_store_data_profile_path(path)
+    assert expected == actual
+
+
+def test_finding_path():
+    project = "scallop"
+    location = "abalone"
+    finding = "squid"
     expected = "projects/{project}/locations/{location}/findings/{finding}".format(
         project=project,
         location=location,
@@ -40035,9 +42337,9 @@ def test_finding_path():
 
 def test_parse_finding_path():
     expected = {
-        "project": "mussel",
-        "location": "winkle",
-        "finding": "nautilus",
+        "project": "clam",
+        "location": "whelk",
+        "finding": "octopus",
     }
     path = DlpServiceClient.finding_path(**expected)
 
@@ -40047,8 +42349,8 @@ def test_parse_finding_path():
 
 
 def test_inspect_template_path():
-    organization = "scallop"
-    inspect_template = "abalone"
+    organization = "oyster"
+    inspect_template = "nudibranch"
     expected = (
         "organizations/{organization}/inspectTemplates/{inspect_template}".format(
             organization=organization,
@@ -40061,8 +42363,8 @@ def test_inspect_template_path():
 
 def test_parse_inspect_template_path():
     expected = {
-        "organization": "squid",
-        "inspect_template": "clam",
+        "organization": "cuttlefish",
+        "inspect_template": "mussel",
     }
     path = DlpServiceClient.inspect_template_path(**expected)
 
@@ -40072,8 +42374,8 @@ def test_parse_inspect_template_path():
 
 
 def test_job_trigger_path():
-    project = "whelk"
-    job_trigger = "octopus"
+    project = "winkle"
+    job_trigger = "nautilus"
     expected = "projects/{project}/jobTriggers/{job_trigger}".format(
         project=project,
         job_trigger=job_trigger,
@@ -40084,8 +42386,8 @@ def test_job_trigger_path():
 
 def test_parse_job_trigger_path():
     expected = {
-        "project": "oyster",
-        "job_trigger": "nudibranch",
+        "project": "scallop",
+        "job_trigger": "abalone",
     }
     path = DlpServiceClient.job_trigger_path(**expected)
 
@@ -40095,9 +42397,9 @@ def test_parse_job_trigger_path():
 
 
 def test_project_data_profile_path():
-    organization = "cuttlefish"
-    location = "mussel"
-    project_data_profile = "winkle"
+    organization = "squid"
+    location = "clam"
+    project_data_profile = "whelk"
     expected = "organizations/{organization}/locations/{location}/projectDataProfiles/{project_data_profile}".format(
         organization=organization,
         location=location,
@@ -40111,9 +42413,9 @@ def test_project_data_profile_path():
 
 def test_parse_project_data_profile_path():
     expected = {
-        "organization": "nautilus",
-        "location": "scallop",
-        "project_data_profile": "abalone",
+        "organization": "octopus",
+        "location": "oyster",
+        "project_data_profile": "nudibranch",
     }
     path = DlpServiceClient.project_data_profile_path(**expected)
 
@@ -40123,8 +42425,8 @@ def test_parse_project_data_profile_path():
 
 
 def test_stored_info_type_path():
-    organization = "squid"
-    stored_info_type = "clam"
+    organization = "cuttlefish"
+    stored_info_type = "mussel"
     expected = "organizations/{organization}/storedInfoTypes/{stored_info_type}".format(
         organization=organization,
         stored_info_type=stored_info_type,
@@ -40135,8 +42437,8 @@ def test_stored_info_type_path():
 
 def test_parse_stored_info_type_path():
     expected = {
-        "organization": "whelk",
-        "stored_info_type": "octopus",
+        "organization": "winkle",
+        "stored_info_type": "nautilus",
     }
     path = DlpServiceClient.stored_info_type_path(**expected)
 
@@ -40146,9 +42448,9 @@ def test_parse_stored_info_type_path():
 
 
 def test_table_data_profile_path():
-    organization = "oyster"
-    location = "nudibranch"
-    table_data_profile = "cuttlefish"
+    organization = "scallop"
+    location = "abalone"
+    table_data_profile = "squid"
     expected = "organizations/{organization}/locations/{location}/tableDataProfiles/{table_data_profile}".format(
         organization=organization,
         location=location,
@@ -40162,9 +42464,9 @@ def test_table_data_profile_path():
 
 def test_parse_table_data_profile_path():
     expected = {
-        "organization": "mussel",
-        "location": "winkle",
-        "table_data_profile": "nautilus",
+        "organization": "clam",
+        "location": "whelk",
+        "table_data_profile": "octopus",
     }
     path = DlpServiceClient.table_data_profile_path(**expected)
 
@@ -40174,7 +42476,7 @@ def test_parse_table_data_profile_path():
 
 
 def test_common_billing_account_path():
-    billing_account = "scallop"
+    billing_account = "oyster"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -40184,7 +42486,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "abalone",
+        "billing_account": "nudibranch",
     }
     path = DlpServiceClient.common_billing_account_path(**expected)
 
@@ -40194,7 +42496,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "squid"
+    folder = "cuttlefish"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -40204,7 +42506,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "clam",
+        "folder": "mussel",
     }
     path = DlpServiceClient.common_folder_path(**expected)
 
@@ -40214,7 +42516,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "whelk"
+    organization = "winkle"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -40224,7 +42526,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "octopus",
+        "organization": "nautilus",
     }
     path = DlpServiceClient.common_organization_path(**expected)
 
@@ -40234,7 +42536,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "oyster"
+    project = "scallop"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -40244,7 +42546,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "nudibranch",
+        "project": "abalone",
     }
     path = DlpServiceClient.common_project_path(**expected)
 
@@ -40254,8 +42556,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "cuttlefish"
-    location = "mussel"
+    project = "squid"
+    location = "clam"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -40266,8 +42568,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "winkle",
-        "location": "nautilus",
+        "project": "whelk",
+        "location": "octopus",
     }
     path = DlpServiceClient.common_location_path(**expected)
 

@@ -38,6 +38,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1264,12 +1265,7 @@ async def test_list_storage_pools_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_storage_pools
         ] = mock_object
@@ -1521,12 +1517,16 @@ def test_list_storage_pools_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_storage_pools(request={})
+        pager = client.list_storage_pools(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -1856,12 +1856,7 @@ async def test_create_storage_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_storage_pool
         ] = mock_object
@@ -2129,6 +2124,8 @@ def test_get_storage_pool(request_type, transport: str = "grpc"):
             psa_range="psa_range_value",
             encryption_type=common.EncryptionType.SERVICE_MANAGED,
             global_access_allowed=True,
+            replica_zone="replica_zone_value",
+            zone="zone_value",
         )
         response = client.get_storage_pool(request)
 
@@ -2155,6 +2152,8 @@ def test_get_storage_pool(request_type, transport: str = "grpc"):
     assert response.psa_range == "psa_range_value"
     assert response.encryption_type == common.EncryptionType.SERVICE_MANAGED
     assert response.global_access_allowed is True
+    assert response.replica_zone == "replica_zone_value"
+    assert response.zone == "zone_value"
 
 
 def test_get_storage_pool_empty_call():
@@ -2270,6 +2269,8 @@ async def test_get_storage_pool_empty_call_async():
                 psa_range="psa_range_value",
                 encryption_type=common.EncryptionType.SERVICE_MANAGED,
                 global_access_allowed=True,
+                replica_zone="replica_zone_value",
+                zone="zone_value",
             )
         )
         response = await client.get_storage_pool()
@@ -2301,12 +2302,7 @@ async def test_get_storage_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_storage_pool
         ] = mock_object
@@ -2357,6 +2353,8 @@ async def test_get_storage_pool_async(
                 psa_range="psa_range_value",
                 encryption_type=common.EncryptionType.SERVICE_MANAGED,
                 global_access_allowed=True,
+                replica_zone="replica_zone_value",
+                zone="zone_value",
             )
         )
         response = await client.get_storage_pool(request)
@@ -2384,6 +2382,8 @@ async def test_get_storage_pool_async(
     assert response.psa_range == "psa_range_value"
     assert response.encryption_type == common.EncryptionType.SERVICE_MANAGED
     assert response.global_access_allowed is True
+    assert response.replica_zone == "replica_zone_value"
+    assert response.zone == "zone_value"
 
 
 @pytest.mark.asyncio
@@ -2705,12 +2705,7 @@ async def test_update_storage_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_storage_pool
         ] = mock_object
@@ -3107,12 +3102,7 @@ async def test_delete_storage_pool_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_storage_pool
         ] = mock_object
@@ -3496,12 +3486,7 @@ async def test_list_volumes_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_volumes
         ] = mock_object
@@ -3741,12 +3726,16 @@ def test_list_volumes_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_volumes(request={})
+        pager = client.list_volumes(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -3938,6 +3927,10 @@ def test_get_volume(request_type, transport: str = "grpc"):
             encryption_type=common.EncryptionType.SERVICE_MANAGED,
             has_replication=True,
             restricted_actions=[volume.RestrictedAction.DELETE],
+            large_capacity=True,
+            multiple_endpoints=True,
+            replica_zone="replica_zone_value",
+            zone="zone_value",
         )
         response = client.get_volume(request)
 
@@ -3973,6 +3966,10 @@ def test_get_volume(request_type, transport: str = "grpc"):
     assert response.encryption_type == common.EncryptionType.SERVICE_MANAGED
     assert response.has_replication is True
     assert response.restricted_actions == [volume.RestrictedAction.DELETE]
+    assert response.large_capacity is True
+    assert response.multiple_endpoints is True
+    assert response.replica_zone == "replica_zone_value"
+    assert response.zone == "zone_value"
 
 
 def test_get_volume_empty_call():
@@ -4095,6 +4092,10 @@ async def test_get_volume_empty_call_async():
                 encryption_type=common.EncryptionType.SERVICE_MANAGED,
                 has_replication=True,
                 restricted_actions=[volume.RestrictedAction.DELETE],
+                large_capacity=True,
+                multiple_endpoints=True,
+                replica_zone="replica_zone_value",
+                zone="zone_value",
             )
         )
         response = await client.get_volume()
@@ -4124,12 +4125,7 @@ async def test_get_volume_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_volume
         ] = mock_object
@@ -4189,6 +4185,10 @@ async def test_get_volume_async(
                 encryption_type=common.EncryptionType.SERVICE_MANAGED,
                 has_replication=True,
                 restricted_actions=[volume.RestrictedAction.DELETE],
+                large_capacity=True,
+                multiple_endpoints=True,
+                replica_zone="replica_zone_value",
+                zone="zone_value",
             )
         )
         response = await client.get_volume(request)
@@ -4225,6 +4225,10 @@ async def test_get_volume_async(
     assert response.encryption_type == common.EncryptionType.SERVICE_MANAGED
     assert response.has_replication is True
     assert response.restricted_actions == [volume.RestrictedAction.DELETE]
+    assert response.large_capacity is True
+    assert response.multiple_endpoints is True
+    assert response.replica_zone == "replica_zone_value"
+    assert response.zone == "zone_value"
 
 
 @pytest.mark.asyncio
@@ -4536,12 +4540,7 @@ async def test_create_volume_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_volume
         ] = mock_object
@@ -4921,12 +4920,7 @@ async def test_update_volume_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_volume
         ] = mock_object
@@ -5300,12 +5294,7 @@ async def test_delete_volume_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_volume
         ] = mock_object
@@ -5671,12 +5660,7 @@ async def test_revert_volume_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.revert_volume
         ] = mock_object
@@ -5968,12 +5952,7 @@ async def test_list_snapshots_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_snapshots
         ] = mock_object
@@ -6213,12 +6192,16 @@ def test_list_snapshots_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_snapshots(request={})
+        pager = client.list_snapshots(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -6541,12 +6524,7 @@ async def test_get_snapshot_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_snapshot
         ] = mock_object
@@ -6915,12 +6893,7 @@ async def test_create_snapshot_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_snapshot
         ] = mock_object
@@ -7304,12 +7277,7 @@ async def test_delete_snapshot_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_snapshot
         ] = mock_object
@@ -7669,12 +7637,7 @@ async def test_update_snapshot_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_snapshot
         ] = mock_object
@@ -8071,12 +8034,7 @@ async def test_list_active_directories_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_active_directories
         ] = mock_object
@@ -8329,12 +8287,16 @@ def test_list_active_directories_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_active_directories(request={})
+        pager = client.list_active_directories(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -8521,6 +8483,7 @@ def test_get_active_directory(request_type, transport: str = "grpc"):
             username="username_value",
             password="password_value",
             backup_operators=["backup_operators_value"],
+            administrators=["administrators_value"],
             security_operators=["security_operators_value"],
             kdc_hostname="kdc_hostname_value",
             kdc_ip="kdc_ip_value",
@@ -8551,6 +8514,7 @@ def test_get_active_directory(request_type, transport: str = "grpc"):
     assert response.username == "username_value"
     assert response.password == "password_value"
     assert response.backup_operators == ["backup_operators_value"]
+    assert response.administrators == ["administrators_value"]
     assert response.security_operators == ["security_operators_value"]
     assert response.kdc_hostname == "kdc_hostname_value"
     assert response.kdc_ip == "kdc_ip_value"
@@ -8678,6 +8642,7 @@ async def test_get_active_directory_empty_call_async():
                 username="username_value",
                 password="password_value",
                 backup_operators=["backup_operators_value"],
+                administrators=["administrators_value"],
                 security_operators=["security_operators_value"],
                 kdc_hostname="kdc_hostname_value",
                 kdc_ip="kdc_ip_value",
@@ -8717,12 +8682,7 @@ async def test_get_active_directory_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_active_directory
         ] = mock_object
@@ -8772,6 +8732,7 @@ async def test_get_active_directory_async(
                 username="username_value",
                 password="password_value",
                 backup_operators=["backup_operators_value"],
+                administrators=["administrators_value"],
                 security_operators=["security_operators_value"],
                 kdc_hostname="kdc_hostname_value",
                 kdc_ip="kdc_ip_value",
@@ -8803,6 +8764,7 @@ async def test_get_active_directory_async(
     assert response.username == "username_value"
     assert response.password == "password_value"
     assert response.backup_operators == ["backup_operators_value"]
+    assert response.administrators == ["administrators_value"]
     assert response.security_operators == ["security_operators_value"]
     assert response.kdc_hostname == "kdc_hostname_value"
     assert response.kdc_ip == "kdc_ip_value"
@@ -9147,12 +9109,7 @@ async def test_create_active_directory_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_active_directory
         ] = mock_object
@@ -9556,12 +9513,7 @@ async def test_update_active_directory_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_active_directory
         ] = mock_object
@@ -9959,12 +9911,7 @@ async def test_delete_active_directory_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_active_directory
         ] = mock_object
@@ -10351,12 +10298,7 @@ async def test_list_kms_configs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_kms_configs
         ] = mock_object
@@ -10596,12 +10538,16 @@ def test_list_kms_configs_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_kms_configs(request={})
+        pager = client.list_kms_configs(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -10923,12 +10869,7 @@ async def test_create_kms_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_kms_config
         ] = mock_object
@@ -11341,12 +11282,7 @@ async def test_get_kms_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_kms_config
         ] = mock_object
@@ -11723,12 +11659,7 @@ async def test_update_kms_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_kms_config
         ] = mock_object
@@ -12112,12 +12043,7 @@ async def test_encrypt_volumes_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.encrypt_volumes
         ] = mock_object
@@ -12416,12 +12342,7 @@ async def test_verify_kms_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.verify_kms_config
         ] = mock_object
@@ -12722,12 +12643,7 @@ async def test_delete_kms_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_kms_config
         ] = mock_object
@@ -13121,12 +13037,7 @@ async def test_list_replications_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_replications
         ] = mock_object
@@ -13378,12 +13289,16 @@ def test_list_replications_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_replications(request={})
+        pager = client.list_replications(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -13730,12 +13645,7 @@ async def test_get_replication_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_replication
         ] = mock_object
@@ -14133,12 +14043,7 @@ async def test_create_replication_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_replication
         ] = mock_object
@@ -14545,12 +14450,7 @@ async def test_delete_replication_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_replication
         ] = mock_object
@@ -14932,12 +14832,7 @@ async def test_update_replication_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_replication
         ] = mock_object
@@ -15324,12 +15219,7 @@ async def test_stop_replication_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.stop_replication
         ] = mock_object
@@ -15623,12 +15513,7 @@ async def test_resume_replication_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.resume_replication
         ] = mock_object
@@ -15929,12 +15814,7 @@ async def test_reverse_replication_direction_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.reverse_replication_direction
         ] = mock_object
@@ -16237,12 +16117,7 @@ async def test_create_backup_vault_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_backup_vault
         ] = mock_object
@@ -16646,12 +16521,7 @@ async def test_get_backup_vault_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_backup_vault
         ] = mock_object
@@ -17040,12 +16910,7 @@ async def test_list_backup_vaults_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_backup_vaults
         ] = mock_object
@@ -17297,12 +17162,16 @@ def test_list_backup_vaults_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_backup_vaults(request={})
+        pager = client.list_backup_vaults(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -17626,12 +17495,7 @@ async def test_update_backup_vault_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_backup_vault
         ] = mock_object
@@ -18028,12 +17892,7 @@ async def test_delete_backup_vault_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_backup_vault
         ] = mock_object
@@ -18409,12 +18268,7 @@ async def test_create_backup_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_backup
         ] = mock_object
@@ -18818,12 +18672,7 @@ async def test_get_backup_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_backup
         ] = mock_object
@@ -19206,12 +19055,7 @@ async def test_list_backups_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_backups
         ] = mock_object
@@ -19451,12 +19295,16 @@ def test_list_backups_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_backups(request={})
+        pager = client.list_backups(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -19766,12 +19614,7 @@ async def test_delete_backup_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_backup
         ] = mock_object
@@ -20131,12 +19974,7 @@ async def test_update_backup_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_backup
         ] = mock_object
@@ -20524,12 +20362,7 @@ async def test_create_backup_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_backup_policy
         ] = mock_object
@@ -20956,12 +20789,7 @@ async def test_get_backup_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_backup_policy
         ] = mock_object
@@ -21370,12 +21198,7 @@ async def test_list_backup_policies_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_backup_policies
         ] = mock_object
@@ -21628,12 +21451,16 @@ def test_list_backup_policies_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_backup_policies(request={})
+        pager = client.list_backup_policies(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -21957,12 +21784,7 @@ async def test_update_backup_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_backup_policy
         ] = mock_object
@@ -22359,12 +22181,7 @@ async def test_delete_backup_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_backup_policy
         ] = mock_object
@@ -22992,6 +22809,8 @@ def test_create_storage_pool_rest(request_type):
         "psa_range": "psa_range_value",
         "encryption_type": 1,
         "global_access_allowed": True,
+        "replica_zone": "replica_zone_value",
+        "zone": "zone_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -23411,6 +23230,8 @@ def test_get_storage_pool_rest(request_type):
             psa_range="psa_range_value",
             encryption_type=common.EncryptionType.SERVICE_MANAGED,
             global_access_allowed=True,
+            replica_zone="replica_zone_value",
+            zone="zone_value",
         )
 
         # Wrap the value into a proper Response obj
@@ -23441,6 +23262,8 @@ def test_get_storage_pool_rest(request_type):
     assert response.psa_range == "psa_range_value"
     assert response.encryption_type == common.EncryptionType.SERVICE_MANAGED
     assert response.global_access_allowed is True
+    assert response.replica_zone == "replica_zone_value"
+    assert response.zone == "zone_value"
 
 
 def test_get_storage_pool_rest_use_cached_wrapped_rpc():
@@ -23745,6 +23568,8 @@ def test_update_storage_pool_rest(request_type):
         "psa_range": "psa_range_value",
         "encryption_type": 1,
         "global_access_allowed": True,
+        "replica_zone": "replica_zone_value",
+        "zone": "zone_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -24835,6 +24660,10 @@ def test_get_volume_rest(request_type):
             encryption_type=common.EncryptionType.SERVICE_MANAGED,
             has_replication=True,
             restricted_actions=[volume.RestrictedAction.DELETE],
+            large_capacity=True,
+            multiple_endpoints=True,
+            replica_zone="replica_zone_value",
+            zone="zone_value",
         )
 
         # Wrap the value into a proper Response obj
@@ -24874,6 +24703,10 @@ def test_get_volume_rest(request_type):
     assert response.encryption_type == common.EncryptionType.SERVICE_MANAGED
     assert response.has_replication is True
     assert response.restricted_actions == [volume.RestrictedAction.DELETE]
+    assert response.large_capacity is True
+    assert response.multiple_endpoints is True
+    assert response.replica_zone == "replica_zone_value"
+    assert response.zone == "zone_value"
 
 
 def test_get_volume_rest_use_cached_wrapped_rpc():
@@ -25231,7 +25064,11 @@ def test_create_volume_rest(request_type):
             "backup_chain_bytes": 1886,
         },
         "restricted_actions": [1],
+        "large_capacity": True,
+        "multiple_endpoints": True,
         "tiering_policy": {"tier_action": 1, "cooling_threshold_days": 2343},
+        "replica_zone": "replica_zone_value",
+        "zone": "zone_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -25711,7 +25548,11 @@ def test_update_volume_rest(request_type):
             "backup_chain_bytes": 1886,
         },
         "restricted_actions": [1],
+        "large_capacity": True,
+        "multiple_endpoints": True,
         "tiering_policy": {"tier_action": 1, "cooling_threshold_days": 2343},
+        "replica_zone": "replica_zone_value",
+        "zone": "zone_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -28825,6 +28666,7 @@ def test_get_active_directory_rest(request_type):
             username="username_value",
             password="password_value",
             backup_operators=["backup_operators_value"],
+            administrators=["administrators_value"],
             security_operators=["security_operators_value"],
             kdc_hostname="kdc_hostname_value",
             kdc_ip="kdc_ip_value",
@@ -28859,6 +28701,7 @@ def test_get_active_directory_rest(request_type):
     assert response.username == "username_value"
     assert response.password == "password_value"
     assert response.backup_operators == ["backup_operators_value"]
+    assert response.administrators == ["administrators_value"]
     assert response.security_operators == ["security_operators_value"]
     assert response.kdc_hostname == "kdc_hostname_value"
     assert response.kdc_ip == "kdc_ip_value"
@@ -29166,6 +29009,7 @@ def test_create_active_directory_rest(request_type):
         "username": "username_value",
         "password": "password_value",
         "backup_operators": ["backup_operators_value1", "backup_operators_value2"],
+        "administrators": ["administrators_value1", "administrators_value2"],
         "security_operators": [
             "security_operators_value1",
             "security_operators_value2",
@@ -29597,6 +29441,7 @@ def test_update_active_directory_rest(request_type):
         "username": "username_value",
         "password": "password_value",
         "backup_operators": ["backup_operators_value1", "backup_operators_value2"],
+        "administrators": ["administrators_value1", "administrators_value2"],
         "security_operators": [
             "security_operators_value1",
             "security_operators_value2",

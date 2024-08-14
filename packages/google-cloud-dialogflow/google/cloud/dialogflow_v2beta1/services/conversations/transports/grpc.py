@@ -125,7 +125,8 @@ class ConversationsGrpcTransport(ConversationsTransport):
 
         if isinstance(channel, grpc.Channel):
             # Ignore credentials if a channel was passed.
-            credentials = False
+            credentials = None
+            self._ignore_credentials = True
             # If a channel was explicitly provided, set it.
             self._grpc_channel = channel
             self._ssl_channel_credentials = None
@@ -493,6 +494,38 @@ class ConversationsGrpcTransport(ConversationsTransport):
                 response_deserializer=conversation.GenerateStatelessSummaryResponse.deserialize,
             )
         return self._stubs["generate_stateless_summary"]
+
+    @property
+    def generate_stateless_suggestion(
+        self,
+    ) -> Callable[
+        [conversation.GenerateStatelessSuggestionRequest],
+        conversation.GenerateStatelessSuggestionResponse,
+    ]:
+        r"""Return a callable for the generate stateless suggestion method over gRPC.
+
+        Generates and returns a suggestion for a conversation
+        that does not have a resource created for it.
+
+        Returns:
+            Callable[[~.GenerateStatelessSuggestionRequest],
+                    ~.GenerateStatelessSuggestionResponse]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "generate_stateless_suggestion" not in self._stubs:
+            self._stubs[
+                "generate_stateless_suggestion"
+            ] = self.grpc_channel.unary_unary(
+                "/google.cloud.dialogflow.v2beta1.Conversations/GenerateStatelessSuggestion",
+                request_serializer=conversation.GenerateStatelessSuggestionRequest.serialize,
+                response_deserializer=conversation.GenerateStatelessSuggestionResponse.deserialize,
+            )
+        return self._stubs["generate_stateless_suggestion"]
 
     @property
     def search_knowledge(

@@ -38,6 +38,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -46,6 +47,7 @@ from google.iam.v1 import options_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account
+from google.protobuf import duration_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
 from google.protobuf import json_format
@@ -73,6 +75,7 @@ from google.cloud.securitycenter_v2.types import (
     attack_path,
     backup_disaster_recovery,
     bigquery_export,
+    cloud_armor,
     cloud_dlp_data_profile,
     cloud_dlp_inspection,
     compliance,
@@ -83,6 +86,7 @@ from google.cloud.securitycenter_v2.types import (
     exfiltration,
 )
 from google.cloud.securitycenter_v2.types import (
+    group_membership,
     iam_binding,
     indicator,
     kernel_rootkit,
@@ -96,6 +100,11 @@ from google.cloud.securitycenter_v2.types import (
     security_posture,
     securitycenter_service,
     simulation,
+)
+from google.cloud.securitycenter_v2.types import (
+    toxic_combination,
+    valued_resource,
+    vulnerability,
 )
 from google.cloud.securitycenter_v2.types import external_system as gcs_external_system
 from google.cloud.securitycenter_v2.types import (
@@ -111,13 +120,13 @@ from google.cloud.securitycenter_v2.types import finding
 from google.cloud.securitycenter_v2.types import finding as gcs_finding
 from google.cloud.securitycenter_v2.types import mute_config
 from google.cloud.securitycenter_v2.types import mute_config as gcs_mute_config
+from google.cloud.securitycenter_v2.types import notebook
 from google.cloud.securitycenter_v2.types import notification_config
-from google.cloud.securitycenter_v2.types import org_policy, process
+from google.cloud.securitycenter_v2.types import org_policy, process, resource
 from google.cloud.securitycenter_v2.types import resource_value_config
 from google.cloud.securitycenter_v2.types import security_marks
 from google.cloud.securitycenter_v2.types import source
 from google.cloud.securitycenter_v2.types import source as gcs_source
-from google.cloud.securitycenter_v2.types import valued_resource, vulnerability
 
 
 def client_cert_source_callback():
@@ -1365,12 +1374,7 @@ async def test_batch_create_resource_value_configs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.batch_create_resource_value_configs
         ] = mock_object
@@ -1797,12 +1801,7 @@ async def test_bulk_mute_findings_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.bulk_mute_findings
         ] = mock_object
@@ -2208,12 +2207,7 @@ async def test_create_big_query_export_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_big_query_export
         ] = mock_object
@@ -2662,12 +2656,7 @@ async def test_create_finding_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_finding
         ] = mock_object
@@ -3102,12 +3091,7 @@ async def test_create_mute_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_mute_config
         ] = mock_object
@@ -3539,12 +3523,7 @@ async def test_create_notification_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_notification_config
         ] = mock_object
@@ -3962,12 +3941,7 @@ async def test_create_source_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_source
         ] = mock_object
@@ -4350,12 +4324,7 @@ async def test_delete_big_query_export_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_big_query_export
         ] = mock_object
@@ -4726,12 +4695,7 @@ async def test_delete_mute_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_mute_config
         ] = mock_object
@@ -5110,12 +5074,7 @@ async def test_delete_notification_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_notification_config
         ] = mock_object
@@ -5487,12 +5446,7 @@ async def test_delete_resource_value_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_resource_value_config
         ] = mock_object
@@ -5885,12 +5839,7 @@ async def test_get_big_query_export_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_big_query_export
         ] = mock_object
@@ -6133,6 +6082,7 @@ def test_get_simulation(request_type, transport: str = "grpc"):
         # Designate an appropriate return value for the call.
         call.return_value = simulation.Simulation(
             name="name_value",
+            cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
         )
         response = client.get_simulation(request)
 
@@ -6145,6 +6095,7 @@ def test_get_simulation(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, simulation.Simulation)
     assert response.name == "name_value"
+    assert response.cloud_provider == resource.CloudProvider.GOOGLE_CLOUD_PLATFORM
 
 
 def test_get_simulation_empty_call():
@@ -6244,6 +6195,7 @@ async def test_get_simulation_empty_call_async():
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             simulation.Simulation(
                 name="name_value",
+                cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
             )
         )
         response = await client.get_simulation()
@@ -6275,12 +6227,7 @@ async def test_get_simulation_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_simulation
         ] = mock_object
@@ -6318,6 +6265,7 @@ async def test_get_simulation_async(
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             simulation.Simulation(
                 name="name_value",
+                cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
             )
         )
         response = await client.get_simulation(request)
@@ -6331,6 +6279,7 @@ async def test_get_simulation_async(
     # Establish that the response is the type that we expect.
     assert isinstance(response, simulation.Simulation)
     assert response.name == "name_value"
+    assert response.cloud_provider == resource.CloudProvider.GOOGLE_CLOUD_PLATFORM
 
 
 @pytest.mark.asyncio
@@ -6675,12 +6624,7 @@ async def test_get_valued_resource_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_valued_resource
         ] = mock_object
@@ -7071,12 +7015,7 @@ async def test_get_iam_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_iam_policy
         ] = mock_object
@@ -7467,12 +7406,7 @@ async def test_get_mute_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_mute_config
         ] = mock_object
@@ -7870,12 +7804,7 @@ async def test_get_notification_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_notification_config
         ] = mock_object
@@ -8121,6 +8050,7 @@ def test_get_resource_value_config(request_type, transport: str = "grpc"):
             resource_type="resource_type_value",
             scope="scope_value",
             description="description_value",
+            cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
         )
         response = client.get_resource_value_config(request)
 
@@ -8138,6 +8068,7 @@ def test_get_resource_value_config(request_type, transport: str = "grpc"):
     assert response.resource_type == "resource_type_value"
     assert response.scope == "scope_value"
     assert response.description == "description_value"
+    assert response.cloud_provider == resource.CloudProvider.GOOGLE_CLOUD_PLATFORM
 
 
 def test_get_resource_value_config_empty_call():
@@ -8253,6 +8184,7 @@ async def test_get_resource_value_config_empty_call_async():
                 resource_type="resource_type_value",
                 scope="scope_value",
                 description="description_value",
+                cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
             )
         )
         response = await client.get_resource_value_config()
@@ -8284,12 +8216,7 @@ async def test_get_resource_value_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_resource_value_config
         ] = mock_object
@@ -8334,6 +8261,7 @@ async def test_get_resource_value_config_async(
                 resource_type="resource_type_value",
                 scope="scope_value",
                 description="description_value",
+                cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
             )
         )
         response = await client.get_resource_value_config(request)
@@ -8352,6 +8280,7 @@ async def test_get_resource_value_config_async(
     assert response.resource_type == "resource_type_value"
     assert response.scope == "scope_value"
     assert response.description == "description_value"
+    assert response.cloud_provider == resource.CloudProvider.GOOGLE_CLOUD_PLATFORM
 
 
 @pytest.mark.asyncio
@@ -8681,12 +8610,7 @@ async def test_get_source_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_source
         ] = mock_object
@@ -9062,12 +8986,7 @@ async def test_group_findings_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.group_findings
         ] = mock_object
@@ -9318,12 +9237,16 @@ def test_group_findings_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.group_findings(request={})
+        pager = client.group_findings(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -9648,12 +9571,7 @@ async def test_list_attack_paths_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_attack_paths
         ] = mock_object
@@ -9904,12 +9822,16 @@ def test_list_attack_paths_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_attack_paths(request={})
+        pager = client.list_attack_paths(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -10241,12 +10163,7 @@ async def test_list_big_query_exports_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_big_query_exports
         ] = mock_object
@@ -10497,12 +10414,16 @@ def test_list_big_query_exports_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_big_query_exports(request={})
+        pager = client.list_big_query_exports(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -10828,12 +10749,7 @@ async def test_list_findings_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_findings
         ] = mock_object
@@ -11074,12 +10990,16 @@ def test_list_findings_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_findings(request={})
+        pager = client.list_findings(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -11412,12 +11332,7 @@ async def test_list_mute_configs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_mute_configs
         ] = mock_object
@@ -11673,9 +11588,13 @@ def test_list_mute_configs_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
-        pager = client.list_mute_configs(request={})
+        retry = retries.Retry()
+        timeout = 5
+        pager = client.list_mute_configs(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -12007,12 +11926,7 @@ async def test_list_notification_configs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_notification_configs
         ] = mock_object
@@ -12263,12 +12177,18 @@ def test_list_notification_configs_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_notification_configs(request={})
+        pager = client.list_notification_configs(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -12604,12 +12524,7 @@ async def test_list_resource_value_configs_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_resource_value_configs
         ] = mock_object
@@ -12860,12 +12775,18 @@ def test_list_resource_value_configs_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_resource_value_configs(request={})
+        pager = client.list_resource_value_configs(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -13188,12 +13109,7 @@ async def test_list_sources_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_sources
         ] = mock_object
@@ -13432,12 +13348,16 @@ def test_list_sources_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_sources(request={})
+        pager = client.list_sources(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -13770,12 +13690,7 @@ async def test_list_valued_resources_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_valued_resources
         ] = mock_object
@@ -14028,12 +13943,16 @@ def test_list_valued_resources_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_valued_resources(request={})
+        pager = client.list_valued_resources(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -14402,12 +14321,7 @@ async def test_set_finding_state_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_finding_state
         ] = mock_object
@@ -14819,12 +14733,7 @@ async def test_set_iam_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_iam_policy
         ] = mock_object
@@ -15244,12 +15153,7 @@ async def test_set_mute_async_use_cached_wrapped_rpc(transport: str = "grpc_asyn
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_mute
         ] = mock_object
@@ -15659,12 +15563,7 @@ async def test_test_iam_permissions_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.test_iam_permissions
         ] = mock_object
@@ -16092,12 +15991,7 @@ async def test_update_big_query_export_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_big_query_export
         ] = mock_object
@@ -16516,12 +16410,7 @@ async def test_update_external_system_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_external_system
         ] = mock_object
@@ -16954,12 +16843,7 @@ async def test_update_finding_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_finding
         ] = mock_object
@@ -17378,12 +17262,7 @@ async def test_update_mute_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_mute_config
         ] = mock_object
@@ -17811,12 +17690,7 @@ async def test_update_notification_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_notification_config
         ] = mock_object
@@ -18080,6 +17954,7 @@ def test_update_resource_value_config(request_type, transport: str = "grpc"):
             resource_type="resource_type_value",
             scope="scope_value",
             description="description_value",
+            cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
         )
         response = client.update_resource_value_config(request)
 
@@ -18097,6 +17972,7 @@ def test_update_resource_value_config(request_type, transport: str = "grpc"):
     assert response.resource_type == "resource_type_value"
     assert response.scope == "scope_value"
     assert response.description == "description_value"
+    assert response.cloud_provider == resource.CloudProvider.GOOGLE_CLOUD_PLATFORM
 
 
 def test_update_resource_value_config_empty_call():
@@ -18208,6 +18084,7 @@ async def test_update_resource_value_config_empty_call_async():
                 resource_type="resource_type_value",
                 scope="scope_value",
                 description="description_value",
+                cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
             )
         )
         response = await client.update_resource_value_config()
@@ -18239,12 +18116,7 @@ async def test_update_resource_value_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_resource_value_config
         ] = mock_object
@@ -18289,6 +18161,7 @@ async def test_update_resource_value_config_async(
                 resource_type="resource_type_value",
                 scope="scope_value",
                 description="description_value",
+                cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
             )
         )
         response = await client.update_resource_value_config(request)
@@ -18307,6 +18180,7 @@ async def test_update_resource_value_config_async(
     assert response.resource_type == "resource_type_value"
     assert response.scope == "scope_value"
     assert response.description == "description_value"
+    assert response.cloud_provider == resource.CloudProvider.GOOGLE_CLOUD_PLATFORM
 
 
 @pytest.mark.asyncio
@@ -18659,12 +18533,7 @@ async def test_update_security_marks_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_security_marks
         ] = mock_object
@@ -19056,12 +18925,7 @@ async def test_update_source_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_source
         ] = mock_object
@@ -20386,6 +20250,12 @@ def test_create_finding_rest(request_type):
         "create_time": {},
         "severity": 1,
         "mute": 1,
+        "mute_info": {
+            "static_mute": {"state": 1, "apply_time": {}},
+            "dynamic_mute_records": [
+                {"mute_config": "mute_config_value", "match_time": {}}
+            ],
+        },
         "finding_class": 1,
         "indicator": {
             "ip_addresses": ["ip_addresses_value1", "ip_addresses_value2"],
@@ -20424,6 +20294,7 @@ def test_create_finding_rest(request_type):
                 "exploitation_activity": 1,
                 "observed_in_the_wild": True,
                 "zero_day": True,
+                "exploit_release_date": {},
             },
             "offending_package": {
                 "package_name": "package_name_value",
@@ -20648,6 +20519,38 @@ def test_create_finding_rest(request_type):
             }
         ],
         "load_balancers": [{"name": "name_value"}],
+        "cloud_armor": {
+            "security_policy": {
+                "name": "name_value",
+                "type_": "type__value",
+                "preview": True,
+            },
+            "requests": {
+                "ratio": 0.543,
+                "short_term_allowed": 1934,
+                "long_term_allowed": 1806,
+                "long_term_denied": 1679,
+            },
+            "adaptive_protection": {"confidence": 0.1038},
+            "attack": {
+                "volume_pps": 1098,
+                "volume_bps": 1084,
+                "classification": "classification_value",
+            },
+            "threat_vector": "threat_vector_value",
+            "duration": {"seconds": 751, "nanos": 543},
+        },
+        "notebook": {
+            "name": "name_value",
+            "service": "service_value",
+            "last_author": "last_author_value",
+            "notebook_update_time": {},
+        },
+        "toxic_combination": {
+            "attack_exposure_score": 0.2253,
+            "related_findings": ["related_findings_value1", "related_findings_value2"],
+        },
+        "group_memberships": [{"group_type": 1, "group_id": "group_id_value"}],
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -21084,6 +20987,7 @@ def test_create_mute_config_rest(request_type):
         "update_time": {},
         "most_recent_editor": "most_recent_editor_value",
         "type_": 1,
+        "expiry_time": {},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -23815,6 +23719,7 @@ def test_get_simulation_rest(request_type):
         # Designate an appropriate value for the returned response.
         return_value = simulation.Simulation(
             name="name_value",
+            cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
         )
 
         # Wrap the value into a proper Response obj
@@ -23831,6 +23736,7 @@ def test_get_simulation_rest(request_type):
     # Establish that the response is the type that we expect.
     assert isinstance(response, simulation.Simulation)
     assert response.name == "name_value"
+    assert response.cloud_provider == resource.CloudProvider.GOOGLE_CLOUD_PLATFORM
 
 
 def test_get_simulation_rest_use_cached_wrapped_rpc():
@@ -25376,6 +25282,7 @@ def test_get_resource_value_config_rest(request_type):
             resource_type="resource_type_value",
             scope="scope_value",
             description="description_value",
+            cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
         )
 
         # Wrap the value into a proper Response obj
@@ -25397,6 +25304,7 @@ def test_get_resource_value_config_rest(request_type):
     assert response.resource_type == "resource_type_value"
     assert response.scope == "scope_value"
     assert response.description == "description_value"
+    assert response.cloud_provider == resource.CloudProvider.GOOGLE_CLOUD_PLATFORM
 
 
 def test_get_resource_value_config_rest_use_cached_wrapped_rpc():
@@ -31615,6 +31523,12 @@ def test_update_finding_rest(request_type):
         "create_time": {},
         "severity": 1,
         "mute": 1,
+        "mute_info": {
+            "static_mute": {"state": 1, "apply_time": {}},
+            "dynamic_mute_records": [
+                {"mute_config": "mute_config_value", "match_time": {}}
+            ],
+        },
         "finding_class": 1,
         "indicator": {
             "ip_addresses": ["ip_addresses_value1", "ip_addresses_value2"],
@@ -31653,6 +31567,7 @@ def test_update_finding_rest(request_type):
                 "exploitation_activity": 1,
                 "observed_in_the_wild": True,
                 "zero_day": True,
+                "exploit_release_date": {},
             },
             "offending_package": {
                 "package_name": "package_name_value",
@@ -31877,6 +31792,38 @@ def test_update_finding_rest(request_type):
             }
         ],
         "load_balancers": [{"name": "name_value"}],
+        "cloud_armor": {
+            "security_policy": {
+                "name": "name_value",
+                "type_": "type__value",
+                "preview": True,
+            },
+            "requests": {
+                "ratio": 0.543,
+                "short_term_allowed": 1934,
+                "long_term_allowed": 1806,
+                "long_term_denied": 1679,
+            },
+            "adaptive_protection": {"confidence": 0.1038},
+            "attack": {
+                "volume_pps": 1098,
+                "volume_bps": 1084,
+                "classification": "classification_value",
+            },
+            "threat_vector": "threat_vector_value",
+            "duration": {"seconds": 751, "nanos": 543},
+        },
+        "notebook": {
+            "name": "name_value",
+            "service": "service_value",
+            "last_author": "last_author_value",
+            "notebook_update_time": {},
+        },
+        "toxic_combination": {
+            "attack_exposure_score": 0.2253,
+            "related_findings": ["related_findings_value1", "related_findings_value2"],
+        },
+        "group_memberships": [{"group_type": 1, "group_id": "group_id_value"}],
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -32290,6 +32237,7 @@ def test_update_mute_config_rest(request_type):
         "update_time": {},
         "most_recent_editor": "most_recent_editor_value",
         "type_": 1,
+        "expiry_time": {},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -33100,6 +33048,7 @@ def test_update_resource_value_config_rest(request_type):
         "description": "description_value",
         "create_time": {"seconds": 751, "nanos": 543},
         "update_time": {},
+        "cloud_provider": 1,
         "sensitive_data_protection_mapping": {
             "high_sensitivity_mapping": 1,
             "medium_sensitivity_mapping": 1,
@@ -33188,6 +33137,7 @@ def test_update_resource_value_config_rest(request_type):
             resource_type="resource_type_value",
             scope="scope_value",
             description="description_value",
+            cloud_provider=resource.CloudProvider.GOOGLE_CLOUD_PLATFORM,
         )
 
         # Wrap the value into a proper Response obj
@@ -33209,6 +33159,7 @@ def test_update_resource_value_config_rest(request_type):
     assert response.resource_type == "resource_type_value"
     assert response.scope == "scope_value"
     assert response.description == "description_value"
+    assert response.cloud_provider == resource.CloudProvider.GOOGLE_CLOUD_PLATFORM
 
 
 def test_update_resource_value_config_rest_use_cached_wrapped_rpc():

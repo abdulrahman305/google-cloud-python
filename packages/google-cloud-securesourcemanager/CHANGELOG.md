@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.7...google-cloud-securesourcemanager-v0.1.8) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([52db52e](https://github.com/googleapis/google-cloud-python/commit/52db52ea05c6883b07956d323fdd1d3029806374))
+
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.6...google-cloud-securesourcemanager-v0.1.7) (2024-07-10)
+
+
+### Features
+
+* add constant `UNKNOWN` to field `State` in message `.google.cloud.securesourcemanager.v1.Instance` ([c3da089](https://github.com/googleapis/google-cloud-python/commit/c3da0899d77a77b9cb50e1c43e36bc191fe16687))
+* add field `private_config` to message `.google.cloud.securesourcemanager.v1.Instance` ([c3da089](https://github.com/googleapis/google-cloud-python/commit/c3da0899d77a77b9cb50e1c43e36bc191fe16687))
+
+
+### Documentation
+
+* A comment for field `instance` in message `.google.cloud.securesourcemanager.v1.Repository` is updated to include data plane vs control plane behavior. ([c3da089](https://github.com/googleapis/google-cloud-python/commit/c3da0899d77a77b9cb50e1c43e36bc191fe16687))
+
+## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.5...google-cloud-securesourcemanager-v0.1.6) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12869](https://github.com/googleapis/google-cloud-python/issues/12869)) ([e42edbc](https://github.com/googleapis/google-cloud-python/commit/e42edbcf7f4d8ed66b6645c96a01c55fb8cd7666))
+
 ## [0.1.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.4...google-cloud-securesourcemanager-v0.1.5) (2024-03-05)
 
 

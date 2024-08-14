@@ -1,5 +1,82 @@
 # Changelog
 
+## [1.35.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-cx-v1.34.1...google-cloud-dialogflow-cx-v1.35.0) (2024-07-30)
+
+
+### Features
+
+* [google-cloud-dialogflow-cx] exposed DataStoreConnectionSignals ([fbe3394](https://github.com/googleapis/google-cloud-python/commit/fbe33947332e5477afc35a31815853840598c319))
+* added support for lock flow ([fbe3394](https://github.com/googleapis/google-cloud-python/commit/fbe33947332e5477afc35a31815853840598c319))
+* added support for multi language settings in flow ([fbe3394](https://github.com/googleapis/google-cloud-python/commit/fbe33947332e5477afc35a31815853840598c319))
+* added support for oauth and service agent auth for webhook. ([fbe3394](https://github.com/googleapis/google-cloud-python/commit/fbe33947332e5477afc35a31815853840598c319))
+* added support for service directory in tools ([fbe3394](https://github.com/googleapis/google-cloud-python/commit/fbe33947332e5477afc35a31815853840598c319))
+* expose PersonalizationSettings & SpeechSettings in v3 API. ([fbe3394](https://github.com/googleapis/google-cloud-python/commit/fbe33947332e5477afc35a31815853840598c319))
+* expose store tts option in security settings ([fbe3394](https://github.com/googleapis/google-cloud-python/commit/fbe33947332e5477afc35a31815853840598c319))
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([52db52e](https://github.com/googleapis/google-cloud-python/commit/52db52ea05c6883b07956d323fdd1d3029806374))
+
+
+### Documentation
+
+* clarified wording around audio redaction ([fbe3394](https://github.com/googleapis/google-cloud-python/commit/fbe33947332e5477afc35a31815853840598c319))
+* clarified wording around enable_stackdriver_logging & enable_interaction_logging ([fbe3394](https://github.com/googleapis/google-cloud-python/commit/fbe33947332e5477afc35a31815853840598c319))
+* clarified wording around start point of test config. ([fbe3394](https://github.com/googleapis/google-cloud-python/commit/fbe33947332e5477afc35a31815853840598c319))
+
+## [1.34.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-cx-v1.34.0...google-cloud-dialogflow-cx-v1.34.1) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12866](https://github.com/googleapis/google-cloud-python/issues/12866)) ([40e1810](https://github.com/googleapis/google-cloud-python/commit/40e18101eaaeefe4baa090c3b4f7a96209ea5735))
+
+## [1.34.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-cx-v1.33.0...google-cloud-dialogflow-cx-v1.34.0) (2024-06-25)
+
+
+### Features
+
+* A new field `action_parameters` is added to message `.google.cloud.dialogflow.cx.v3beta1.PlaybookInput` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new field `action_parameters` is added to message `.google.cloud.dialogflow.cx.v3beta1.PlaybookOutput` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new field `endpointing_timeout_duration` is added to message `.google.cloud.dialogflow.cx.v3beta1.AdvancedSettings` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new field `input_action_parameters` is added to message `.google.cloud.dialogflow.cx.v3beta1.FlowInvocation` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new field `input_action_parameters` is added to message `.google.cloud.dialogflow.cx.v3beta1.ToolUse` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new field `instruction` is added to message `.google.cloud.dialogflow.cx.v3beta1.Playbook` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new field `interdigit_timeout_duration` is added to message `.google.cloud.dialogflow.cx.v3beta1.AdvancedSettings` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new field `output_action_parameters` is added to message `.google.cloud.dialogflow.cx.v3beta1.FlowInvocation` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new field `output_action_parameters` is added to message `.google.cloud.dialogflow.cx.v3beta1.ToolUse` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new field `store_tts_audio` is added to message `.google.cloud.dialogflow.cx.v3beta1.SecuritySettings` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new field `tool_call` is added to message `.google.cloud.dialogflow.cx.v3beta1.ResponseMessage` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new message `Instruction` is added ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new message `ToolCall` is added ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A new value `PLAYBOOK` is added to enum `MatchType` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* added Conversation History API ([40d47d2](https://github.com/googleapis/google-cloud-python/commit/40d47d2ff0018e0ea4ddedfd7427e698aba3e533))
+* added Language Info to webhook Request ([40d47d2](https://github.com/googleapis/google-cloud-python/commit/40d47d2ff0018e0ea4ddedfd7427e698aba3e533))
+
+
+### Bug Fixes
+
+* An existing field `actions` is removed from message `.google.cloud.dialogflow.cx.v3beta1.Tool` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* An existing field `input_parameters` is removed from message `.google.cloud.dialogflow.cx.v3beta1.FlowInvocation` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* An existing field `input_parameters` is removed from message `.google.cloud.dialogflow.cx.v3beta1.ToolUse` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* An existing field `output_parameters` is removed from message `.google.cloud.dialogflow.cx.v3beta1.FlowInvocation` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* An existing field `output_parameters` is removed from message `.google.cloud.dialogflow.cx.v3beta1.ToolUse` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* An existing field `parameters` is removed from message `.google.cloud.dialogflow.cx.v3beta1.PlaybookInput` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* An existing field `parameters` is removed from message `.google.cloud.dialogflow.cx.v3beta1.PlaybookOutput` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* An existing field `schemas` is removed from message `.google.cloud.dialogflow.cx.v3beta1.Tool` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* An existing field `start_playbook` is moved in to oneof in message `.google.cloud.dialogflow.cx.v3beta1.Agent` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* An existing field `steps` is removed from message `.google.cloud.dialogflow.cx.v3beta1.Playbook` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* An existing field start_flow is moved in to oneof in message `.google.cloud.dialogflow.cx.v3beta1.Agent` ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* An existing message `ActionParameter` is removed ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+
+
+### Documentation
+
+* A comment for field `start_flow` in message `.google.cloud.dialogflow.cx.v3beta1.Agent` is changed ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* A comment for field `start_playbook` in message `.google.cloud.dialogflow.cx.v3beta1.Agent` is changed ([119b895](https://github.com/googleapis/google-cloud-python/commit/119b895d5e7bf87fcc86de278fd3ff1b9407c3f6))
+* improve doc for SecuritySetting.retention_window_days ([40d47d2](https://github.com/googleapis/google-cloud-python/commit/40d47d2ff0018e0ea4ddedfd7427e698aba3e533))
+
 ## [1.33.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-cx-v1.32.1...google-cloud-dialogflow-cx-v1.33.0) (2024-03-27)
 
 

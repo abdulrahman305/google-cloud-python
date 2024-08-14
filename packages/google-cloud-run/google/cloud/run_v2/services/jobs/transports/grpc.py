@@ -127,7 +127,8 @@ class JobsGrpcTransport(JobsTransport):
 
         if isinstance(channel, grpc.Channel):
             # Ignore credentials if a channel was passed.
-            credentials = False
+            credentials = None
+            self._ignore_credentials = True
             # If a channel was explicitly provided, set it.
             self._grpc_channel = channel
             self._ssl_channel_credentials = None
@@ -307,7 +308,8 @@ class JobsGrpcTransport(JobsTransport):
     def list_jobs(self) -> Callable[[job.ListJobsRequest], job.ListJobsResponse]:
         r"""Return a callable for the list jobs method over gRPC.
 
-        Lists Jobs.
+        Lists Jobs. Results are sorted by creation time,
+        descending.
 
         Returns:
             Callable[[~.ListJobsRequest],

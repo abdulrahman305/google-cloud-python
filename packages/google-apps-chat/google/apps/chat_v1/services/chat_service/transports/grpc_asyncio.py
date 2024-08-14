@@ -34,6 +34,7 @@ from google.apps.chat_v1.types import reaction
 from google.apps.chat_v1.types import reaction as gc_reaction
 from google.apps.chat_v1.types import space
 from google.apps.chat_v1.types import space as gc_space
+from google.apps.chat_v1.types import space_event
 from google.apps.chat_v1.types import space_read_state
 from google.apps.chat_v1.types import space_read_state as gc_space_read_state
 from google.apps.chat_v1.types import space_setup, thread_read_state
@@ -181,7 +182,8 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
 
         if isinstance(channel, aio.Channel):
             # Ignore credentials if a channel was passed.
-            credentials = False
+            credentials = None
+            self._ignore_credentials = True
             # If a channel was explicitly provided, set it.
             self._grpc_channel = channel
             self._ssl_channel_credentials = None
@@ -604,6 +606,11 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         Lists spaces visible to the caller or authenticated user. Group
         chats and DMs aren't listed until the first message is sent.
 
+        To list all named spaces by Google Workspace organization, use
+        the
+        ```spaces.search()`` <https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces/search>`__
+        method using Workspace administrator privileges instead.
+
         Returns:
             Callable[[~.ListSpacesRequest],
                     Awaitable[~.ListSpacesResponse]]:
@@ -713,6 +720,18 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         ``user@example.com`` is ``123456789``, you can add the user to
         the space by setting the ``membership.member.name`` to
         ``users/user@example.com`` or ``users/123456789``.
+
+        To specify the Google groups to add, add memberships with the
+        appropriate ``membership.group_member.name``. To add or invite a
+        Google group, use ``groups/{group}``, where ``{group}`` is the
+        ``id`` for the group from the Cloud Identity Groups API. For
+        example, you can use `Cloud Identity Groups lookup
+        API <https://cloud.google.com/identity/docs/reference/rest/v1/groups/lookup>`__
+        to retrieve the ID ``123456789`` for group email
+        ``group@example.com``, then you can add the group to the space
+        by setting the ``membership.group_member.name`` to
+        ``groups/123456789``. Group email is not supported, and Google
+        groups can only be added as members in named spaces.
 
         For a named space or group chat, if the caller blocks, or is
         blocked by some members, or doesn't have permission to add some
@@ -927,7 +946,8 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
         authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
 
         To specify the member to add, set the ``membership.member.name``
-        for the human or app member.
+        for the human or app member, or set the
+        ``membership.group_member.name`` for the group member.
 
         -  To add the calling app to a space or a direct message between
            two human users, use ``users/app``. Unable to add other apps
@@ -942,6 +962,18 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
            add the user to the space by setting the
            ``membership.member.name`` to ``users/user@example.com`` or
            ``users/123456789``.
+
+        -  To add or invite a Google group in a named space, use
+           ``groups/{group}``, where ``{group}`` is the ``id`` for the
+           group from the Cloud Identity Groups API. For example, you
+           can use `Cloud Identity Groups lookup
+           API <https://cloud.google.com/identity/docs/reference/rest/v1/groups/lookup>`__
+           to retrieve the ID ``123456789`` for group email
+           ``group@example.com``, then you can add or invite the group
+           to a named space by setting the
+           ``membership.group_member.name`` to ``groups/123456789``.
+           Group email is not supported, and Google groups can only be
+           added as members in named spaces.
 
         Returns:
             Callable[[~.CreateMembershipRequest],
@@ -1223,6 +1255,92 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
                 response_deserializer=thread_read_state.ThreadReadState.deserialize,
             )
         return self._stubs["get_thread_read_state"]
+
+    @property
+    def get_space_event(
+        self,
+    ) -> Callable[
+        [space_event.GetSpaceEventRequest], Awaitable[space_event.SpaceEvent]
+    ]:
+        r"""Return a callable for the get space event method over gRPC.
+
+        Returns an event from a Google Chat space. The `event
+        payload <https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces.spaceEvents#SpaceEvent.FIELDS.oneof_payload>`__
+        contains the most recent version of the resource that changed.
+        For example, if you request an event about a new message but the
+        message was later updated, the server returns the updated
+        ``Message`` resource in the event payload.
+
+        Requires `user
+        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        To get an event, the authenticated user must be a member of the
+        space.
+
+        For an example, see `Get details about an event from a Google
+        Chat
+        space <https://developers.google.com/workspace/chat/get-space-event>`__.
+
+        Returns:
+            Callable[[~.GetSpaceEventRequest],
+                    Awaitable[~.SpaceEvent]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "get_space_event" not in self._stubs:
+            self._stubs["get_space_event"] = self.grpc_channel.unary_unary(
+                "/google.chat.v1.ChatService/GetSpaceEvent",
+                request_serializer=space_event.GetSpaceEventRequest.serialize,
+                response_deserializer=space_event.SpaceEvent.deserialize,
+            )
+        return self._stubs["get_space_event"]
+
+    @property
+    def list_space_events(
+        self,
+    ) -> Callable[
+        [space_event.ListSpaceEventsRequest],
+        Awaitable[space_event.ListSpaceEventsResponse],
+    ]:
+        r"""Return a callable for the list space events method over gRPC.
+
+        Lists events from a Google Chat space. For each event, the
+        `payload <https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces.spaceEvents#SpaceEvent.FIELDS.oneof_payload>`__
+        contains the most recent version of the Chat resource. For
+        example, if you list events about new space members, the server
+        returns ``Membership`` resources that contain the latest
+        membership details. If new members were removed during the
+        requested period, the event payload contains an empty
+        ``Membership`` resource.
+
+        Requires `user
+        authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__.
+        To list events, the authenticated user must be a member of the
+        space.
+
+        For an example, see `List events from a Google Chat
+        space <https://developers.google.com/workspace/chat/list-space-events>`__.
+
+        Returns:
+            Callable[[~.ListSpaceEventsRequest],
+                    Awaitable[~.ListSpaceEventsResponse]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "list_space_events" not in self._stubs:
+            self._stubs["list_space_events"] = self.grpc_channel.unary_unary(
+                "/google.chat.v1.ChatService/ListSpaceEvents",
+                request_serializer=space_event.ListSpaceEventsRequest.serialize,
+                response_deserializer=space_event.ListSpaceEventsResponse.deserialize,
+            )
+        return self._stubs["list_space_events"]
 
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
@@ -1579,6 +1697,34 @@ class ChatServiceGrpcAsyncIOTransport(ChatServiceTransport):
             ),
             self.get_thread_read_state: gapic_v1.method_async.wrap_method(
                 self.get_thread_read_state,
+                default_retry=retries.AsyncRetry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=30.0,
+                ),
+                default_timeout=30.0,
+                client_info=client_info,
+            ),
+            self.get_space_event: gapic_v1.method_async.wrap_method(
+                self.get_space_event,
+                default_retry=retries.AsyncRetry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=30.0,
+                ),
+                default_timeout=30.0,
+                client_info=client_info,
+            ),
+            self.list_space_events: gapic_v1.method_async.wrap_method(
+                self.list_space_events,
                 default_retry=retries.AsyncRetry(
                     initial=1.0,
                     maximum=10.0,

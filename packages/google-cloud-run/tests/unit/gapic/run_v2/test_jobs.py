@@ -39,6 +39,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1214,12 +1215,7 @@ async def test_create_job_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_job
         ] = mock_object
@@ -1439,6 +1435,7 @@ def test_get_job(request_type, transport: str = "grpc"):
             reconciling=True,
             satisfies_pzs=True,
             etag="etag_value",
+            start_execution_token="start_execution_token_value",
         )
         response = client.get_job(request)
 
@@ -1603,12 +1600,7 @@ async def test_get_job_async_use_cached_wrapped_rpc(transport: str = "grpc_async
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_job
         ] = mock_object
@@ -1959,12 +1951,7 @@ async def test_list_jobs_async_use_cached_wrapped_rpc(transport: str = "grpc_asy
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_jobs
         ] = mock_object
@@ -2165,9 +2152,13 @@ def test_list_jobs_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
-        pager = client.list_jobs(request={})
+        retry = retries.Retry()
+        timeout = 5
+        pager = client.list_jobs(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -2471,12 +2462,7 @@ async def test_update_job_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_job
         ] = mock_object
@@ -2805,12 +2791,7 @@ async def test_delete_job_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_job
         ] = mock_object
@@ -3139,12 +3120,7 @@ async def test_run_job_async_use_cached_wrapped_rpc(transport: str = "grpc_async
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.run_job
         ] = mock_object
@@ -3477,12 +3453,7 @@ async def test_get_iam_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_iam_policy
         ] = mock_object
@@ -3784,12 +3755,7 @@ async def test_set_iam_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_iam_policy
         ] = mock_object
@@ -4101,12 +4067,7 @@ async def test_test_iam_permissions_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.test_iam_permissions
         ] = mock_object
@@ -4282,6 +4243,7 @@ def test_create_job_rest(request_type):
         "launch_stage": 6,
         "binary_authorization": {
             "use_default": True,
+            "policy": "policy_value",
             "breakglass_justification": "breakglass_justification_value",
         },
         "template": {
@@ -4398,9 +4360,13 @@ def test_create_job_rest(request_type):
             "name": "name_value",
             "create_time": {},
             "completion_time": {},
+            "delete_time": {},
+            "completion_status": 1,
         },
         "reconciling": True,
         "satisfies_pzs": True,
+        "start_execution_token": "start_execution_token_value",
+        "run_execution_token": "run_execution_token_value",
         "etag": "etag_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
@@ -4820,6 +4786,7 @@ def test_get_job_rest(request_type):
             reconciling=True,
             satisfies_pzs=True,
             etag="etag_value",
+            start_execution_token="start_execution_token_value",
         )
 
         # Wrap the value into a proper Response obj
@@ -5502,6 +5469,7 @@ def test_update_job_rest(request_type):
         "launch_stage": 6,
         "binary_authorization": {
             "use_default": True,
+            "policy": "policy_value",
             "breakglass_justification": "breakglass_justification_value",
         },
         "template": {
@@ -5618,9 +5586,13 @@ def test_update_job_rest(request_type):
             "name": "name_value",
             "create_time": {},
             "completion_time": {},
+            "delete_time": {},
+            "completion_status": 1,
         },
         "reconciling": True,
         "satisfies_pzs": True,
+        "start_execution_token": "start_execution_token_value",
+        "run_execution_token": "run_execution_token_value",
         "etag": "etag_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.

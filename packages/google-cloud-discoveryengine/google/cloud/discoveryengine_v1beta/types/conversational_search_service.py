@@ -432,6 +432,28 @@ class AnswerQueryRequest(proto.Message):
             The field must be a UTF-8 encoded string with a length limit
             of 128 characters. Otherwise, an ``INVALID_ARGUMENT`` error
             is returned.
+        user_labels (MutableMapping[str, str]):
+            The user labels applied to a resource must meet the
+            following requirements:
+
+            -  Each resource can have multiple labels, up to a maximum
+               of 64.
+            -  Each label must be a key-value pair.
+            -  Keys have a minimum length of 1 character and a maximum
+               length of 63 characters and cannot be empty. Values can
+               be empty and have a maximum length of 63 characters.
+            -  Keys and values can contain only lowercase letters,
+               numeric characters, underscores, and dashes. All
+               characters must use UTF-8 encoding, and international
+               characters are allowed.
+            -  The key portion of a label must be unique. However, you
+               can use the same key with multiple resources.
+            -  Keys must start with a lowercase letter or international
+               character.
+
+            See `Google Cloud
+            Document <https://cloud.google.com/resource-manager/docs/creating-managing-labels#requirements>`__
+            for more details.
     """
 
     class SafetySpec(proto.Message):
@@ -636,6 +658,10 @@ class AnswerQueryRequest(proto.Message):
 
                     If this field is unrecognizable, an ``INVALID_ARGUMENT`` is
                     returned.
+                search_result_mode (google.cloud.discoveryengine_v1beta.types.SearchRequest.ContentSearchSpec.SearchResultMode):
+                    Specifies the search result mode. If unspecified, the search
+                    result mode defaults to ``DOCUMENTS``. See `parse and chunk
+                    documents <https://cloud.google.com/generative-ai-app-builder/docs/parse-chunk-documents>`__
                 data_store_specs (MutableSequence[google.cloud.discoveryengine_v1beta.types.SearchRequest.DataStoreSpec]):
                     Specs defining dataStores to filter on in a
                     search call and configurations for those
@@ -661,6 +687,11 @@ class AnswerQueryRequest(proto.Message):
             order_by: str = proto.Field(
                 proto.STRING,
                 number=4,
+            )
+            search_result_mode: search_service.SearchRequest.ContentSearchSpec.SearchResultMode = proto.Field(
+                proto.ENUM,
+                number=5,
+                enum=search_service.SearchRequest.ContentSearchSpec.SearchResultMode,
             )
             data_store_specs: MutableSequence[
                 search_service.SearchRequest.DataStoreSpec
@@ -985,6 +1016,11 @@ class AnswerQueryRequest(proto.Message):
         proto.STRING,
         number=12,
     )
+    user_labels: MutableMapping[str, str] = proto.MapField(
+        proto.STRING,
+        proto.STRING,
+        number=13,
+    )
 
 
 class AnswerQueryResponse(proto.Message):
@@ -995,8 +1031,8 @@ class AnswerQueryResponse(proto.Message):
     Attributes:
         answer (google.cloud.discoveryengine_v1beta.types.Answer):
             Answer resource object. If
-            [AnswerQueryRequest.StepSpec.max_step_count][] is greater
-            than 1, use
+            [AnswerQueryRequest.QueryUnderstandingSpec.QueryRephraserSpec.max_rephrase_steps][google.cloud.discoveryengine.v1beta.AnswerQueryRequest.QueryUnderstandingSpec.QueryRephraserSpec.max_rephrase_steps]
+            is greater than 1, use
             [Answer.name][google.cloud.discoveryengine.v1beta.Answer.name]
             to fetch answer information using
             [ConversationalSearchService.GetAnswer][google.cloud.discoveryengine.v1beta.ConversationalSearchService.GetAnswer]

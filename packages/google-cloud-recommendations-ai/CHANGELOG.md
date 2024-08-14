@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.10.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recommendations-ai-v0.10.11...google-cloud-recommendations-ai-v0.10.12) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([42c4d04](https://github.com/googleapis/google-cloud-python/commit/42c4d04ee1362ba0ed0f1b6a134ac8e409875b63))
+
+## [0.10.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recommendations-ai-v0.10.10...google-cloud-recommendations-ai-v0.10.11) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12869](https://github.com/googleapis/google-cloud-python/issues/12869)) ([e42edbc](https://github.com/googleapis/google-cloud-python/commit/e42edbcf7f4d8ed66b6645c96a01c55fb8cd7666))
+
 ## [0.10.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recommendations-ai-v0.10.9...google-cloud-recommendations-ai-v0.10.10) (2024-03-05)
 
 

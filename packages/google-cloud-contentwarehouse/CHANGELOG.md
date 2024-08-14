@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contentwarehouse-v0.7.8...google-cloud-contentwarehouse-v0.7.9) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([a6f7356](https://github.com/googleapis/google-cloud-python/commit/a6f7356f1549721f9fab83d4dcfa226cec1965d0))
+
+## [0.7.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contentwarehouse-v0.7.7...google-cloud-contentwarehouse-v0.7.8) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12865](https://github.com/googleapis/google-cloud-python/issues/12865)) ([7f9dedb](https://github.com/googleapis/google-cloud-python/commit/7f9dedb3abc7636cbcd97e21ac857844b885b599))
+
 ## [0.7.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contentwarehouse-v0.7.6...google-cloud-contentwarehouse-v0.7.7) (2024-03-05)
 
 

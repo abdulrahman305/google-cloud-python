@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.20.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-secret-manager-v2.20.1...google-cloud-secret-manager-v2.20.2) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([52db52e](https://github.com/googleapis/google-cloud-python/commit/52db52ea05c6883b07956d323fdd1d3029806374))
+
+## [2.20.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-secret-manager-v2.20.0...google-cloud-secret-manager-v2.20.1) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12869](https://github.com/googleapis/google-cloud-python/issues/12869)) ([e42edbc](https://github.com/googleapis/google-cloud-python/commit/e42edbcf7f4d8ed66b6645c96a01c55fb8cd7666))
+
 ## [2.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-secret-manager-v2.19.0...google-cloud-secret-manager-v2.20.0) (2024-04-22)
 
 

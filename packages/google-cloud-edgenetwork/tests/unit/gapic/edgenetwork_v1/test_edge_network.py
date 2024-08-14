@@ -38,6 +38,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1252,12 +1253,7 @@ async def test_initialize_zone_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.initialize_zone
         ] = mock_object
@@ -1625,12 +1621,7 @@ async def test_list_zones_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_zones
         ] = mock_object
@@ -1870,12 +1861,16 @@ def test_list_zones_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_zones(request={})
+        pager = client.list_zones(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -2187,12 +2182,7 @@ async def test_get_zone_async_use_cached_wrapped_rpc(transport: str = "grpc_asyn
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_zone
         ] = mock_object
@@ -2563,12 +2553,7 @@ async def test_list_networks_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_networks
         ] = mock_object
@@ -2808,12 +2793,16 @@ def test_list_networks_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_networks(request={})
+        pager = client.list_networks(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -3130,12 +3119,7 @@ async def test_get_network_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_network
         ] = mock_object
@@ -3496,12 +3480,7 @@ async def test_diagnose_network_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.diagnose_network
         ] = mock_object
@@ -3865,12 +3844,7 @@ async def test_create_network_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_network
         ] = mock_object
@@ -4256,12 +4230,7 @@ async def test_delete_network_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_network
         ] = mock_object
@@ -4635,12 +4604,7 @@ async def test_list_subnets_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_subnets
         ] = mock_object
@@ -4880,12 +4844,16 @@ def test_list_subnets_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_subnets(request={})
+        pager = client.list_subnets(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -5059,6 +5027,7 @@ def test_get_subnet(request_type, transport: str = "grpc"):
             ipv4_cidr=["ipv4_cidr_value"],
             ipv6_cidr=["ipv6_cidr_value"],
             vlan_id=733,
+            bonding_type=resources.Subnet.BondingType.BONDED,
             state=resources.ResourceState.STATE_PENDING,
         )
         response = client.get_subnet(request)
@@ -5077,6 +5046,7 @@ def test_get_subnet(request_type, transport: str = "grpc"):
     assert response.ipv4_cidr == ["ipv4_cidr_value"]
     assert response.ipv6_cidr == ["ipv6_cidr_value"]
     assert response.vlan_id == 733
+    assert response.bonding_type == resources.Subnet.BondingType.BONDED
     assert response.state == resources.ResourceState.STATE_PENDING
 
 
@@ -5182,6 +5152,7 @@ async def test_get_subnet_empty_call_async():
                 ipv4_cidr=["ipv4_cidr_value"],
                 ipv6_cidr=["ipv6_cidr_value"],
                 vlan_id=733,
+                bonding_type=resources.Subnet.BondingType.BONDED,
                 state=resources.ResourceState.STATE_PENDING,
             )
         )
@@ -5212,12 +5183,7 @@ async def test_get_subnet_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_subnet
         ] = mock_object
@@ -5259,6 +5225,7 @@ async def test_get_subnet_async(
                 ipv4_cidr=["ipv4_cidr_value"],
                 ipv6_cidr=["ipv6_cidr_value"],
                 vlan_id=733,
+                bonding_type=resources.Subnet.BondingType.BONDED,
                 state=resources.ResourceState.STATE_PENDING,
             )
         )
@@ -5278,6 +5245,7 @@ async def test_get_subnet_async(
     assert response.ipv4_cidr == ["ipv4_cidr_value"]
     assert response.ipv6_cidr == ["ipv6_cidr_value"]
     assert response.vlan_id == 733
+    assert response.bonding_type == resources.Subnet.BondingType.BONDED
     assert response.state == resources.ResourceState.STATE_PENDING
 
 
@@ -5592,12 +5560,7 @@ async def test_create_subnet_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_subnet
         ] = mock_object
@@ -5981,12 +5944,7 @@ async def test_update_subnet_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_subnet
         ] = mock_object
@@ -6362,12 +6320,7 @@ async def test_delete_subnet_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_subnet
         ] = mock_object
@@ -6753,12 +6706,7 @@ async def test_list_interconnects_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_interconnects
         ] = mock_object
@@ -7010,12 +6958,16 @@ def test_list_interconnects_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_interconnects(request={})
+        pager = client.list_interconnects(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -7351,12 +7303,7 @@ async def test_get_interconnect_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_interconnect
         ] = mock_object
@@ -7740,12 +7687,7 @@ async def test_diagnose_interconnect_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.diagnose_interconnect
         ] = mock_object
@@ -8138,12 +8080,7 @@ async def test_list_interconnect_attachments_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_interconnect_attachments
         ] = mock_object
@@ -8396,12 +8333,18 @@ def test_list_interconnect_attachments_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_interconnect_attachments(request={})
+        pager = client.list_interconnect_attachments(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -8749,12 +8692,7 @@ async def test_get_interconnect_attachment_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_interconnect_attachment
         ] = mock_object
@@ -9157,12 +9095,7 @@ async def test_create_interconnect_attachment_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_interconnect_attachment
         ] = mock_object
@@ -9572,12 +9505,7 @@ async def test_delete_interconnect_attachment_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_interconnect_attachment
         ] = mock_object
@@ -9962,12 +9890,7 @@ async def test_list_routers_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_routers
         ] = mock_object
@@ -10207,12 +10130,16 @@ def test_list_routers_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_routers(request={})
+        pager = client.list_routers(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -10533,12 +10460,7 @@ async def test_get_router_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_router
         ] = mock_object
@@ -10901,12 +10823,7 @@ async def test_diagnose_router_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.diagnose_router
         ] = mock_object
@@ -11270,12 +11187,7 @@ async def test_create_router_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_router
         ] = mock_object
@@ -11659,12 +11571,7 @@ async def test_update_router_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_router
         ] = mock_object
@@ -12040,12 +11947,7 @@ async def test_delete_router_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_router
         ] = mock_object
@@ -15321,6 +15223,7 @@ def test_get_subnet_rest(request_type):
             ipv4_cidr=["ipv4_cidr_value"],
             ipv6_cidr=["ipv6_cidr_value"],
             vlan_id=733,
+            bonding_type=resources.Subnet.BondingType.BONDED,
             state=resources.ResourceState.STATE_PENDING,
         )
 
@@ -15343,6 +15246,7 @@ def test_get_subnet_rest(request_type):
     assert response.ipv4_cidr == ["ipv4_cidr_value"]
     assert response.ipv6_cidr == ["ipv6_cidr_value"]
     assert response.vlan_id == 733
+    assert response.bonding_type == resources.Subnet.BondingType.BONDED
     assert response.state == resources.ResourceState.STATE_PENDING
 
 
@@ -15632,6 +15536,7 @@ def test_create_subnet_rest(request_type):
         "ipv4_cidr": ["ipv4_cidr_value1", "ipv4_cidr_value2"],
         "ipv6_cidr": ["ipv6_cidr_value1", "ipv6_cidr_value2"],
         "vlan_id": 733,
+        "bonding_type": 1,
         "state": 1,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
@@ -16049,6 +15954,7 @@ def test_update_subnet_rest(request_type):
         "ipv4_cidr": ["ipv4_cidr_value1", "ipv4_cidr_value2"],
         "ipv6_cidr": ["ipv6_cidr_value1", "ipv6_cidr_value2"],
         "vlan_id": 733,
+        "bonding_type": 1,
         "state": 1,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.

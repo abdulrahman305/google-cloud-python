@@ -1,5 +1,41 @@
 # Changelog
 
+## [2.31.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.30.0...google-cloud-documentai-v2.31.0) (2024-08-08)
+
+
+### Features
+
+* A new field `gen_ai_model_info` is added to message `.google.cloud.documentai.v1.ProcessorVersion` ([f16067b](https://github.com/googleapis/google-cloud-python/commit/f16067b585fcc1f0862ce15ed00789caf0ca25bb))
+* A new field `imageless_mode` is added to message `.google.cloud.documentai.v1.ProcessRequest` ([f16067b](https://github.com/googleapis/google-cloud-python/commit/f16067b585fcc1f0862ce15ed00789caf0ca25bb))
+
+## [2.30.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.29.3...google-cloud-documentai-v2.30.0) (2024-07-31)
+
+
+### Features
+
+* [google-cloud-documentai] A new field `imageless_mode` is added to message `.google.cloud.documentai.v1.ProcessRequest` ([#12966](https://github.com/googleapis/google-cloud-python/issues/12966)) ([60d0728](https://github.com/googleapis/google-cloud-python/commit/60d07285f7282e89612f184aa6c95d7f2f38e1c7))
+
+## [2.29.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.29.2...google-cloud-documentai-v2.29.3) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([ba1064f](https://github.com/googleapis/google-cloud-python/commit/ba1064fd6a63ccbe8a390c0026f32c5772c728a5))
+
+## [2.29.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.29.1...google-cloud-documentai-v2.29.2) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12866](https://github.com/googleapis/google-cloud-python/issues/12866)) ([40e1810](https://github.com/googleapis/google-cloud-python/commit/40e18101eaaeefe4baa090c3b4f7a96209ea5735))
+
+## [2.29.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.29.0...google-cloud-documentai-v2.29.1) (2024-06-24)
+
+
+### Documentation
+
+* Update the comment to add a note about `documentai.processors.create` permission ([9318d94](https://github.com/googleapis/google-cloud-python/commit/9318d94ce12bd7a2e242f1ac9cbe491307c84ea6))
+
 ## [2.29.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v2.28.0...google-cloud-documentai-v2.29.0) (2024-06-05)
 
 

@@ -1,4 +1,18 @@
 # Changelog
+## [1.14.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-billing-budgets-v1.14.4...google-cloud-billing-budgets-v1.14.5) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([a6f7356](https://github.com/googleapis/google-cloud-python/commit/a6f7356f1549721f9fab83d4dcfa226cec1965d0))
+
+## [1.14.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-billing-budgets-v1.14.3...google-cloud-billing-budgets-v1.14.4) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12864](https://github.com/googleapis/google-cloud-python/issues/12864)) ([728b307](https://github.com/googleapis/google-cloud-python/commit/728b307ed0cc497685507a219e913f002f097132))
+
 ## [1.14.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-billing-budgets-v1.14.2...google-cloud-billing-budgets-v1.14.3) (2024-03-05)
 
 

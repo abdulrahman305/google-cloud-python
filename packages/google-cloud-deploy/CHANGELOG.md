@@ -1,5 +1,45 @@
 # Changelog
 
+## [2.0.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.0.0...google-cloud-deploy-v2.0.1) (2024-08-08)
+
+
+### Documentation
+
+* very minor documentation updates ([477c8e4](https://github.com/googleapis/google-cloud-python/commit/477c8e4438b5ca2f05095955fd03cb5a6f189292))
+
+## [2.0.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v1.19.1...google-cloud-deploy-v2.0.0) (2024-07-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* Remove an API that was mistakenly made public
+
+### Features
+
+* [google-cloud-deploy] added support for deploy policies ([40a5c2a](https://github.com/googleapis/google-cloud-python/commit/40a5c2a1a9b8061615eedc24d0ff55e1c8bdffe9))
+* [google-cloud-deploy] added support for new custom target type and deploy policy platform logs ([40a5c2a](https://github.com/googleapis/google-cloud-python/commit/40a5c2a1a9b8061615eedc24d0ff55e1c8bdffe9))
+* Add support for different Pod selector labels when doing canaries ([cf7022d](https://github.com/googleapis/google-cloud-python/commit/cf7022d39d41599023db6f15aa29b625e398270a))
+* added support for configuring a proxy_url to a Kubernetes server ([40a5c2a](https://github.com/googleapis/google-cloud-python/commit/40a5c2a1a9b8061615eedc24d0ff55e1c8bdffe9))
+
+
+### Bug Fixes
+
+* Remove an API that was mistakenly made public ([cf7022d](https://github.com/googleapis/google-cloud-python/commit/cf7022d39d41599023db6f15aa29b625e398270a))
+* Retry and timeout values do not propagate in requests during pagination ([52db52e](https://github.com/googleapis/google-cloud-python/commit/52db52ea05c6883b07956d323fdd1d3029806374))
+* Retry and timeout values do not propagate in requests during pagination ([ba1064f](https://github.com/googleapis/google-cloud-python/commit/ba1064fd6a63ccbe8a390c0026f32c5772c728a5))
+
+
+### Documentation
+
+* small corrections to Cloud Deploy API documentation ([40a5c2a](https://github.com/googleapis/google-cloud-python/commit/40a5c2a1a9b8061615eedc24d0ff55e1c8bdffe9))
+
+## [1.19.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v1.19.0...google-cloud-deploy-v1.19.1) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12866](https://github.com/googleapis/google-cloud-python/issues/12866)) ([40e1810](https://github.com/googleapis/google-cloud-python/commit/40e18101eaaeefe4baa090c3b4f7a96209ea5735))
+
 ## [1.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v1.18.1...google-cloud-deploy-v1.19.0) (2024-05-16)
 
 

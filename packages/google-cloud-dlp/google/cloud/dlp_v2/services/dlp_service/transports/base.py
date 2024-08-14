@@ -83,6 +83,8 @@ class DlpServiceTransport(abc.ABC):
 
         # Save the scopes.
         self._scopes = scopes
+        if not hasattr(self, "_ignore_credentials"):
+            self._ignore_credentials: bool = False
 
         # If no credentials are provided, then determine the appropriate
         # defaults.
@@ -95,7 +97,7 @@ class DlpServiceTransport(abc.ABC):
             credentials, _ = google.auth.load_credentials_from_file(
                 credentials_file, **scopes_kwargs, quota_project_id=quota_project_id
             )
-        elif credentials is None:
+        elif credentials is None and not self._ignore_credentials:
             credentials, _ = google.auth.default(
                 **scopes_kwargs, quota_project_id=quota_project_id
             )
@@ -603,6 +605,51 @@ class DlpServiceTransport(abc.ABC):
                 default_timeout=300.0,
                 client_info=client_info,
             ),
+            self.list_file_store_data_profiles: gapic_v1.method.wrap_method(
+                self.list_file_store_data_profiles,
+                default_retry=retries.Retry(
+                    initial=0.1,
+                    maximum=60.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=300.0,
+                ),
+                default_timeout=300.0,
+                client_info=client_info,
+            ),
+            self.get_file_store_data_profile: gapic_v1.method.wrap_method(
+                self.get_file_store_data_profile,
+                default_retry=retries.Retry(
+                    initial=0.1,
+                    maximum=60.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=300.0,
+                ),
+                default_timeout=300.0,
+                client_info=client_info,
+            ),
+            self.delete_file_store_data_profile: gapic_v1.method.wrap_method(
+                self.delete_file_store_data_profile,
+                default_retry=retries.Retry(
+                    initial=0.1,
+                    maximum=60.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=300.0,
+                ),
+                default_timeout=300.0,
+                client_info=client_info,
+            ),
             self.get_table_data_profile: gapic_v1.method.wrap_method(
                 self.get_table_data_profile,
                 default_retry=retries.Retry(
@@ -1063,6 +1110,36 @@ class DlpServiceTransport(abc.ABC):
     ) -> Callable[
         [dlp.GetProjectDataProfileRequest],
         Union[dlp.ProjectDataProfile, Awaitable[dlp.ProjectDataProfile]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_file_store_data_profiles(
+        self,
+    ) -> Callable[
+        [dlp.ListFileStoreDataProfilesRequest],
+        Union[
+            dlp.ListFileStoreDataProfilesResponse,
+            Awaitable[dlp.ListFileStoreDataProfilesResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_file_store_data_profile(
+        self,
+    ) -> Callable[
+        [dlp.GetFileStoreDataProfileRequest],
+        Union[dlp.FileStoreDataProfile, Awaitable[dlp.FileStoreDataProfile]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_file_store_data_profile(
+        self,
+    ) -> Callable[
+        [dlp.DeleteFileStoreDataProfileRequest],
+        Union[empty_pb2.Empty, Awaitable[empty_pb2.Empty]],
     ]:
         raise NotImplementedError()
 

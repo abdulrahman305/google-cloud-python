@@ -27,7 +27,12 @@ from google.cloud.securitycenter_v2.types import (
     contact_details,
     container,
 )
-from google.cloud.securitycenter_v2.types import external_system, file, iam_binding
+from google.cloud.securitycenter_v2.types import (
+    external_system,
+    file,
+    group_membership,
+    iam_binding,
+)
 from google.cloud.securitycenter_v2.types import attack_exposure as gcs_attack_exposure
 from google.cloud.securitycenter_v2.types import (
     backup_disaster_recovery as gcs_backup_disaster_recovery,
@@ -45,13 +50,18 @@ from google.cloud.securitycenter_v2.types import security_marks as gcs_security_
 from google.cloud.securitycenter_v2.types import (
     security_posture as gcs_security_posture,
 )
+from google.cloud.securitycenter_v2.types import (
+    toxic_combination as gcs_toxic_combination,
+)
 from google.cloud.securitycenter_v2.types import vulnerability as gcs_vulnerability
 from google.cloud.securitycenter_v2.types import access as gcs_access
 from google.cloud.securitycenter_v2.types import application as gcs_application
+from google.cloud.securitycenter_v2.types import cloud_armor as gcs_cloud_armor
 from google.cloud.securitycenter_v2.types import database as gcs_database
 from google.cloud.securitycenter_v2.types import indicator as gcs_indicator
 from google.cloud.securitycenter_v2.types import kubernetes as gcs_kubernetes
 from google.cloud.securitycenter_v2.types import load_balancer, log_entry
+from google.cloud.securitycenter_v2.types import notebook as gcs_notebook
 from google.cloud.securitycenter_v2.types import org_policy, process
 
 __protobuf__ = proto.module(
@@ -181,6 +191,9 @@ class Finding(proto.Message):
             muted, unmuted or undefined). Unlike other
             attributes of a finding, a finding provider
             shouldn't set the value of mute.
+        mute_info (google.cloud.securitycenter_v2.types.Finding.MuteInfo):
+            Output only. The mute information regarding
+            this finding.
         finding_class (google.cloud.securitycenter_v2.types.Finding.FindingClass):
             The class of the finding.
         indicator (google.cloud.securitycenter_v2.types.Indicator):
@@ -302,6 +315,24 @@ class Finding(proto.Message):
         load_balancers (MutableSequence[google.cloud.securitycenter_v2.types.LoadBalancer]):
             The load balancers associated with the
             finding.
+        cloud_armor (google.cloud.securitycenter_v2.types.CloudArmor):
+            Fields related to Cloud Armor findings.
+        notebook (google.cloud.securitycenter_v2.types.Notebook):
+            Notebook associated with the finding.
+        toxic_combination (google.cloud.securitycenter_v2.types.ToxicCombination):
+            Contains details about a group of security
+            issues that, when the issues occur together,
+            represent a greater risk than when the issues
+            occur independently. A group of such issues is
+            referred to as a toxic combination.
+            This field cannot be updated. Its value is
+            ignored in all update requests.
+        group_memberships (MutableSequence[google.cloud.securitycenter_v2.types.GroupMembership]):
+            Contains details about groups of which this
+            finding is a member. A group is a collection of
+            findings that are related in some way. This
+            field cannot be updated. Its value is ignored in
+            all update requests.
     """
 
     class State(proto.Enum):
@@ -453,6 +484,10 @@ class Finding(proto.Message):
             POSTURE_VIOLATION (6):
                 Describes a potential security risk due to a
                 change in the security posture.
+            TOXIC_COMBINATION (7):
+                Describes a combination of security issues
+                that represent a more severe security problem
+                when taken together.
         """
         FINDING_CLASS_UNSPECIFIED = 0
         THREAT = 1
@@ -461,6 +496,84 @@ class Finding(proto.Message):
         OBSERVATION = 4
         SCC_ERROR = 5
         POSTURE_VIOLATION = 6
+        TOXIC_COMBINATION = 7
+
+    class MuteInfo(proto.Message):
+        r"""Mute information about the finding, including whether the
+        finding has a static mute or any matching dynamic mute rules.
+
+        Attributes:
+            static_mute (google.cloud.securitycenter_v2.types.Finding.MuteInfo.StaticMute):
+                If set, the static mute applied to this
+                finding. Static mutes override dynamic mutes. If
+                unset, there is no static mute.
+            dynamic_mute_records (MutableSequence[google.cloud.securitycenter_v2.types.Finding.MuteInfo.DynamicMuteRecord]):
+                The list of dynamic mute rules that currently
+                match the finding.
+        """
+
+        class StaticMute(proto.Message):
+            r"""Information about the static mute state. A static mute state
+            overrides any dynamic mute rules that apply to this finding. The
+            static mute state can be set by a static mute rule or by muting
+            the finding directly.
+
+            Attributes:
+                state (google.cloud.securitycenter_v2.types.Finding.Mute):
+                    The static mute state. If the value is ``MUTED`` or
+                    ``UNMUTED``, then the finding's overall mute state will have
+                    the same value.
+                apply_time (google.protobuf.timestamp_pb2.Timestamp):
+                    When the static mute was applied.
+            """
+
+            state: "Finding.Mute" = proto.Field(
+                proto.ENUM,
+                number=1,
+                enum="Finding.Mute",
+            )
+            apply_time: timestamp_pb2.Timestamp = proto.Field(
+                proto.MESSAGE,
+                number=2,
+                message=timestamp_pb2.Timestamp,
+            )
+
+        class DynamicMuteRecord(proto.Message):
+            r"""The record of a dynamic mute rule that matches the finding.
+
+            Attributes:
+                mute_config (str):
+                    The relative resource name of the mute rule, represented by
+                    a mute config, that created this record, for example
+                    ``organizations/123/muteConfigs/mymuteconfig`` or
+                    ``organizations/123/locations/global/muteConfigs/mymuteconfig``.
+                match_time (google.protobuf.timestamp_pb2.Timestamp):
+                    When the dynamic mute rule first matched the
+                    finding.
+            """
+
+            mute_config: str = proto.Field(
+                proto.STRING,
+                number=1,
+            )
+            match_time: timestamp_pb2.Timestamp = proto.Field(
+                proto.MESSAGE,
+                number=2,
+                message=timestamp_pb2.Timestamp,
+            )
+
+        static_mute: "Finding.MuteInfo.StaticMute" = proto.Field(
+            proto.MESSAGE,
+            number=1,
+            message="Finding.MuteInfo.StaticMute",
+        )
+        dynamic_mute_records: MutableSequence[
+            "Finding.MuteInfo.DynamicMuteRecord"
+        ] = proto.RepeatedField(
+            proto.MESSAGE,
+            number=2,
+            message="Finding.MuteInfo.DynamicMuteRecord",
+        )
 
     name: str = proto.Field(
         proto.STRING,
@@ -521,6 +634,11 @@ class Finding(proto.Message):
         proto.ENUM,
         number=15,
         enum=Mute,
+    )
+    mute_info: MuteInfo = proto.Field(
+        proto.MESSAGE,
+        number=53,
+        message=MuteInfo,
     )
     finding_class: FindingClass = proto.Field(
         proto.ENUM,
@@ -684,6 +802,28 @@ class Finding(proto.Message):
         proto.MESSAGE,
         number=50,
         message=load_balancer.LoadBalancer,
+    )
+    cloud_armor: gcs_cloud_armor.CloudArmor = proto.Field(
+        proto.MESSAGE,
+        number=51,
+        message=gcs_cloud_armor.CloudArmor,
+    )
+    notebook: gcs_notebook.Notebook = proto.Field(
+        proto.MESSAGE,
+        number=55,
+        message=gcs_notebook.Notebook,
+    )
+    toxic_combination: gcs_toxic_combination.ToxicCombination = proto.Field(
+        proto.MESSAGE,
+        number=56,
+        message=gcs_toxic_combination.ToxicCombination,
+    )
+    group_memberships: MutableSequence[
+        group_membership.GroupMembership
+    ] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=57,
+        message=group_membership.GroupMembership,
     )
 
 

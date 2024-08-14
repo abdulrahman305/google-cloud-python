@@ -178,7 +178,8 @@ class FunctionServiceGrpcAsyncIOTransport(FunctionServiceTransport):
 
         if isinstance(channel, aio.Channel):
             # Ignore credentials if a channel was passed.
-            credentials = False
+            credentials = None
+            self._ignore_credentials = True
             # If a channel was explicitly provided, set it.
             self._grpc_channel = channel
             self._ssl_channel_credentials = None
@@ -435,12 +436,11 @@ class FunctionServiceGrpcAsyncIOTransport(FunctionServiceTransport):
            credentials would be used, but that identity does not have
            permissions to upload files to the URL.
 
-        When making a HTTP PUT request, these two headers need to be
-        specified:
+        When making a HTTP PUT request, specify this header:
 
         -  ``content-type: application/zip``
 
-        And this header SHOULD NOT be specified:
+        Do not specify this header:
 
         -  ``Authorization: Bearer YOUR_TOKEN``
 

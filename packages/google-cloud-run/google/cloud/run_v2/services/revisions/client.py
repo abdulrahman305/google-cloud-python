@@ -921,7 +921,8 @@ class RevisionsClient(metaclass=RevisionsClientMeta):
         metadata: Sequence[Tuple[str, str]] = (),
     ) -> pagers.ListRevisionsPager:
         r"""Lists Revisions from a given Service, or from a given
-        location.
+        location.  Results are sorted by creation time,
+        descending.
 
         .. code-block:: python
 
@@ -1034,6 +1035,8 @@ class RevisionsClient(metaclass=RevisionsClientMeta):
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 

@@ -87,6 +87,8 @@ class ParticipantsTransport(abc.ABC):
 
         # Save the scopes.
         self._scopes = scopes
+        if not hasattr(self, "_ignore_credentials"):
+            self._ignore_credentials: bool = False
 
         # If no credentials are provided, then determine the appropriate
         # defaults.
@@ -99,7 +101,7 @@ class ParticipantsTransport(abc.ABC):
             credentials, _ = google.auth.load_credentials_from_file(
                 credentials_file, **scopes_kwargs, quota_project_id=quota_project_id
             )
-        elif credentials is None:
+        elif credentials is None and not self._ignore_credentials:
             credentials, _ = google.auth.default(
                 **scopes_kwargs, quota_project_id=quota_project_id
             )
@@ -183,6 +185,11 @@ class ParticipantsTransport(abc.ABC):
             ),
             self.suggest_smart_replies: gapic_v1.method.wrap_method(
                 self.suggest_smart_replies,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.suggest_knowledge_assist: gapic_v1.method.wrap_method(
+                self.suggest_knowledge_assist,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -302,6 +309,18 @@ class ParticipantsTransport(abc.ABC):
         Union[
             participant.SuggestSmartRepliesResponse,
             Awaitable[participant.SuggestSmartRepliesResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def suggest_knowledge_assist(
+        self,
+    ) -> Callable[
+        [participant.SuggestKnowledgeAssistRequest],
+        Union[
+            participant.SuggestKnowledgeAssistResponse,
+            Awaitable[participant.SuggestKnowledgeAssistResponse],
         ],
     ]:
         raise NotImplementedError()

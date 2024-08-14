@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.4.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.10...google-cloud-confidentialcomputing-v0.4.11) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([a6f7356](https://github.com/googleapis/google-cloud-python/commit/a6f7356f1549721f9fab83d4dcfa226cec1965d0))
+
+## [0.4.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.9...google-cloud-confidentialcomputing-v0.4.10) (2024-07-10)
+
+
+### Features
+
+* [google-cloud-confidentialcomputing] Add a new field `tee_attestation` to `VerifyAttestationRequest` message proto for SEV SNP and TDX attestations ([#12894](https://github.com/googleapis/google-cloud-python/issues/12894)) ([8e75da8](https://github.com/googleapis/google-cloud-python/commit/8e75da8f04b5c1e6442517949581a9424f90bb18))
+
+## [0.4.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.8...google-cloud-confidentialcomputing-v0.4.9) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12865](https://github.com/googleapis/google-cloud-python/issues/12865)) ([7f9dedb](https://github.com/googleapis/google-cloud-python/commit/7f9dedb3abc7636cbcd97e21ac857844b885b599))
+
 ## [0.4.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.7...google-cloud-confidentialcomputing-v0.4.8) (2024-03-27)
 
 

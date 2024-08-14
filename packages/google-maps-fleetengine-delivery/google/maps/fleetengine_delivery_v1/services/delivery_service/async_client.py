@@ -340,6 +340,7 @@ class DeliveryServiceAsyncClient:
                 creating a new delivery vehicle, you may set the
                 following optional fields:
 
+                -  type
                 -  last_location
                 -  attributes
 
@@ -566,8 +567,8 @@ class DeliveryServiceAsyncClient:
         r"""Writes updated ``DeliveryVehicle`` data to Fleet Engine, and
         assigns ``Tasks`` to the ``DeliveryVehicle``. You cannot update
         the name of the ``DeliveryVehicle``. You *can* update
-        ``remaining_vehicle_journey_segments`` though, but it must
-        contain all of the ``VehicleJourneySegment``\ s currently on the
+        ``remaining_vehicle_journey_segments``, but it must contain all
+        of the ``VehicleJourneySegment``\ s to be persisted on the
         ``DeliveryVehicle``. The ``task_id``\ s are retrieved from
         ``remaining_vehicle_journey_segments``, and their corresponding
         ``Tasks`` are assigned to the ``DeliveryVehicle`` if they have
@@ -1339,6 +1340,8 @@ class DeliveryServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -1571,6 +1574,8 @@ class DeliveryServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 

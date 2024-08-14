@@ -131,17 +131,14 @@ from google.cloud.deploy_v1.types.cloud_deploy import (
     PromoteReleaseRule,
     Release,
     RenderMetadata,
-    RepairMode,
     RepairPhase,
     RepairRolloutOperation,
     RepairRolloutRule,
     RepairState,
-    Retry,
     RetryAttempt,
     RetryJobRequest,
     RetryJobResponse,
     RetryPhase,
-    Rollback,
     RollbackAttempt,
     RollbackTargetConfig,
     RollbackTargetRequest,
@@ -169,8 +166,14 @@ from google.cloud.deploy_v1.types.cloud_deploy import (
     VerifyJob,
     VerifyJobRun,
 )
+from google.cloud.deploy_v1.types.customtargettype_notification_payload import (
+    CustomTargetTypeNotificationEvent,
+)
 from google.cloud.deploy_v1.types.deliverypipeline_notification_payload import (
     DeliveryPipelineNotificationEvent,
+)
+from google.cloud.deploy_v1.types.deploypolicy_notification_payload import (
+    DeployPolicyNotificationEvent,
 )
 from google.cloud.deploy_v1.types.jobrun_notification_payload import (
     JobRunNotificationEvent,
@@ -298,16 +301,13 @@ __all__ = (
     "PromoteReleaseRule",
     "Release",
     "RenderMetadata",
-    "RepairMode",
     "RepairPhase",
     "RepairRolloutOperation",
     "RepairRolloutRule",
-    "Retry",
     "RetryAttempt",
     "RetryJobRequest",
     "RetryJobResponse",
     "RetryPhase",
-    "Rollback",
     "RollbackAttempt",
     "RollbackTargetConfig",
     "RollbackTargetRequest",
@@ -336,7 +336,9 @@ __all__ = (
     "BackoffMode",
     "RepairState",
     "SkaffoldSupportState",
+    "CustomTargetTypeNotificationEvent",
     "DeliveryPipelineNotificationEvent",
+    "DeployPolicyNotificationEvent",
     "JobRunNotificationEvent",
     "Type",
     "ReleaseNotificationEvent",

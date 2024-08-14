@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 from .answer import Answer
+from .chunk import Chunk
 from .common import (
     CustomAttribute,
     DoubleList,
@@ -26,7 +27,7 @@ from .common import (
     SolutionType,
     UserInfo,
 )
-from .completion import SuggestionDenyListEntry
+from .completion import CompletionSuggestion, SuggestionDenyListEntry
 from .completion_service import CompleteQueryRequest, CompleteQueryResponse
 from .control import Condition, Control
 from .control_service import (
@@ -64,7 +65,7 @@ from .conversational_search_service import (
     UpdateSessionRequest,
 )
 from .custom_tuning_model import CustomTuningModel
-from .data_store import DataStore
+from .data_store import DataStore, LanguageInfo
 from .data_store_service import (
     CreateDataStoreMetadata,
     CreateDataStoreRequest,
@@ -101,6 +102,16 @@ from .engine_service import (
     TuneEngineResponse,
     UpdateEngineRequest,
 )
+from .evaluation import Evaluation, QualityMetrics
+from .evaluation_service import (
+    CreateEvaluationMetadata,
+    CreateEvaluationRequest,
+    GetEvaluationRequest,
+    ListEvaluationResultsRequest,
+    ListEvaluationResultsResponse,
+    ListEvaluationsRequest,
+    ListEvaluationsResponse,
+)
 from .grounded_generation_service import (
     CheckGroundingRequest,
     CheckGroundingResponse,
@@ -108,6 +119,7 @@ from .grounded_generation_service import (
 )
 from .grounding import FactChunk, GroundingFact
 from .import_config import (
+    AlloyDbSource,
     BigQuerySource,
     BigtableOptions,
     BigtableSource,
@@ -115,10 +127,16 @@ from .import_config import (
     FhirStoreSource,
     FirestoreSource,
     GcsSource,
+    ImportCompletionSuggestionsMetadata,
+    ImportCompletionSuggestionsRequest,
+    ImportCompletionSuggestionsResponse,
     ImportDocumentsMetadata,
     ImportDocumentsRequest,
     ImportDocumentsResponse,
     ImportErrorConfig,
+    ImportSampleQueriesMetadata,
+    ImportSampleQueriesRequest,
+    ImportSampleQueriesResponse,
     ImportSuggestionDenyListEntriesMetadata,
     ImportSuggestionDenyListEntriesRequest,
     ImportSuggestionDenyListEntriesResponse,
@@ -130,15 +148,39 @@ from .import_config import (
 from .project import Project
 from .project_service import ProvisionProjectMetadata, ProvisionProjectRequest
 from .purge_config import (
+    PurgeCompletionSuggestionsMetadata,
+    PurgeCompletionSuggestionsRequest,
+    PurgeCompletionSuggestionsResponse,
     PurgeDocumentsMetadata,
     PurgeDocumentsRequest,
     PurgeDocumentsResponse,
     PurgeSuggestionDenyListEntriesMetadata,
     PurgeSuggestionDenyListEntriesRequest,
     PurgeSuggestionDenyListEntriesResponse,
+    PurgeUserEventsMetadata,
+    PurgeUserEventsRequest,
+    PurgeUserEventsResponse,
 )
 from .rank_service import RankingRecord, RankRequest, RankResponse
 from .recommendation_service import RecommendRequest, RecommendResponse
+from .sample_query import SampleQuery
+from .sample_query_service import (
+    CreateSampleQueryRequest,
+    DeleteSampleQueryRequest,
+    GetSampleQueryRequest,
+    ListSampleQueriesRequest,
+    ListSampleQueriesResponse,
+    UpdateSampleQueryRequest,
+)
+from .sample_query_set import SampleQuerySet
+from .sample_query_set_service import (
+    CreateSampleQuerySetRequest,
+    DeleteSampleQuerySetRequest,
+    GetSampleQuerySetRequest,
+    ListSampleQuerySetsRequest,
+    ListSampleQuerySetsResponse,
+    UpdateSampleQuerySetRequest,
+)
 from .schema import Schema
 from .schema_service import (
     CreateSchemaMetadata,
@@ -211,6 +253,7 @@ from .user_event_service import CollectUserEventRequest, WriteUserEventRequest
 
 __all__ = (
     "Answer",
+    "Chunk",
     "CustomAttribute",
     "DoubleList",
     "EmbeddingConfig",
@@ -221,6 +264,7 @@ __all__ = (
     "SearchTier",
     "SearchUseCase",
     "SolutionType",
+    "CompletionSuggestion",
     "SuggestionDenyListEntry",
     "CompleteQueryRequest",
     "CompleteQueryResponse",
@@ -256,6 +300,7 @@ __all__ = (
     "UpdateSessionRequest",
     "CustomTuningModel",
     "DataStore",
+    "LanguageInfo",
     "CreateDataStoreMetadata",
     "CreateDataStoreRequest",
     "DeleteDataStoreMetadata",
@@ -286,11 +331,21 @@ __all__ = (
     "TuneEngineRequest",
     "TuneEngineResponse",
     "UpdateEngineRequest",
+    "Evaluation",
+    "QualityMetrics",
+    "CreateEvaluationMetadata",
+    "CreateEvaluationRequest",
+    "GetEvaluationRequest",
+    "ListEvaluationResultsRequest",
+    "ListEvaluationResultsResponse",
+    "ListEvaluationsRequest",
+    "ListEvaluationsResponse",
     "CheckGroundingRequest",
     "CheckGroundingResponse",
     "CheckGroundingSpec",
     "FactChunk",
     "GroundingFact",
+    "AlloyDbSource",
     "BigQuerySource",
     "BigtableOptions",
     "BigtableSource",
@@ -298,10 +353,16 @@ __all__ = (
     "FhirStoreSource",
     "FirestoreSource",
     "GcsSource",
+    "ImportCompletionSuggestionsMetadata",
+    "ImportCompletionSuggestionsRequest",
+    "ImportCompletionSuggestionsResponse",
     "ImportDocumentsMetadata",
     "ImportDocumentsRequest",
     "ImportDocumentsResponse",
     "ImportErrorConfig",
+    "ImportSampleQueriesMetadata",
+    "ImportSampleQueriesRequest",
+    "ImportSampleQueriesResponse",
     "ImportSuggestionDenyListEntriesMetadata",
     "ImportSuggestionDenyListEntriesRequest",
     "ImportSuggestionDenyListEntriesResponse",
@@ -312,17 +373,37 @@ __all__ = (
     "Project",
     "ProvisionProjectMetadata",
     "ProvisionProjectRequest",
+    "PurgeCompletionSuggestionsMetadata",
+    "PurgeCompletionSuggestionsRequest",
+    "PurgeCompletionSuggestionsResponse",
     "PurgeDocumentsMetadata",
     "PurgeDocumentsRequest",
     "PurgeDocumentsResponse",
     "PurgeSuggestionDenyListEntriesMetadata",
     "PurgeSuggestionDenyListEntriesRequest",
     "PurgeSuggestionDenyListEntriesResponse",
+    "PurgeUserEventsMetadata",
+    "PurgeUserEventsRequest",
+    "PurgeUserEventsResponse",
     "RankingRecord",
     "RankRequest",
     "RankResponse",
     "RecommendRequest",
     "RecommendResponse",
+    "SampleQuery",
+    "CreateSampleQueryRequest",
+    "DeleteSampleQueryRequest",
+    "GetSampleQueryRequest",
+    "ListSampleQueriesRequest",
+    "ListSampleQueriesResponse",
+    "UpdateSampleQueryRequest",
+    "SampleQuerySet",
+    "CreateSampleQuerySetRequest",
+    "DeleteSampleQuerySetRequest",
+    "GetSampleQuerySetRequest",
+    "ListSampleQuerySetsRequest",
+    "ListSampleQuerySetsResponse",
+    "UpdateSampleQuerySetRequest",
     "Schema",
     "CreateSchemaMetadata",
     "CreateSchemaRequest",

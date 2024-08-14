@@ -28,6 +28,7 @@ from typing import (
     Type,
     Union,
 )
+import warnings
 
 from google.api_core import exceptions as core_exceptions
 from google.api_core import gapic_v1
@@ -348,8 +349,7 @@ class CloudControlsPartnerCoreAsyncClient:
                 workload.
             name (:class:`str`):
                 Required. Format:
-
-                organizations/{organization}/locations/{location}/customers/{customer}/workloads/{workload}
+                ``organizations/{organization}/locations/{location}/customers/{customer}/workloads/{workload}``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -455,10 +455,8 @@ class CloudControlsPartnerCoreAsyncClient:
             request (Optional[Union[google.cloud.cloudcontrolspartner_v1beta.types.ListWorkloadsRequest, dict]]):
                 The request object. Request to list customer workloads.
             parent (:class:`str`):
-                Required. Parent resource
-                Format:
-
-                organizations/{organization}/locations/{location}/customers/{customer}
+                Required. Parent resource Format:
+                ``organizations/{organization}/locations/{location}/customers/{customer}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -527,6 +525,8 @@ class CloudControlsPartnerCoreAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -575,8 +575,7 @@ class CloudControlsPartnerCoreAsyncClient:
                 The request object. Message for getting a customer
             name (:class:`str`):
                 Required. Format:
-
-                organizations/{organization}/locations/{location}/customers/{customer}
+                ``organizations/{organization}/locations/{location}/customers/{customer}``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -682,9 +681,8 @@ class CloudControlsPartnerCoreAsyncClient:
             request (Optional[Union[google.cloud.cloudcontrolspartner_v1beta.types.ListCustomersRequest, dict]]):
                 The request object. Request to list customers
             parent (:class:`str`):
-                Required. Parent resource
-                Format:
-                organizations/{organization}/locations/{location}
+                Required. Parent resource Format:
+                ``organizations/{organization}/locations/{location}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -753,6 +751,8 @@ class CloudControlsPartnerCoreAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -802,8 +802,7 @@ class CloudControlsPartnerCoreAsyncClient:
                 connections associated with a workload
             name (:class:`str`):
                 Required. Format:
-
-                organizations/{organization}/locations/{location}/customers/{customer}/workloads/{workload}/ekmConnections
+                ``organizations/{organization}/locations/{location}/customers/{customer}/workloads/{workload}/ekmConnections``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -910,9 +909,8 @@ class CloudControlsPartnerCoreAsyncClient:
                 The request object. Request for getting the partner
                 permissions granted for a workload
             name (:class:`str`):
-                Required. Name of the resource to get
-                in the format:
-                organizations/{organization}/locations/{location}/customers/{customer}/workloads/{workload}/partnerPermissions
+                Required. Name of the resource to get in the format:
+                ``organizations/{organization}/locations/{location}/customers/{customer}/workloads/{workload}/partnerPermissions``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -986,7 +984,8 @@ class CloudControlsPartnerCoreAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, str]] = (),
     ) -> pagers.ListAccessApprovalRequestsAsyncPager:
-        r"""Lists access requests associated with a workload
+        r"""Deprecated: Only returns access approval requests
+        directly associated with an assured workload folder.
 
         .. code-block:: python
 
@@ -1020,10 +1019,8 @@ class CloudControlsPartnerCoreAsyncClient:
                 The request object. Request for getting the access
                 requests associated with a workload.
             parent (:class:`str`):
-                Required. Parent resource
-                Format:
-
-                organizations/{organization}/locations/{location}/customers/{customer}/workloads/{workload}
+                Required. Parent resource Format:
+                ``organizations/{organization}/locations/{location}/customers/{customer}/workloads/{workload}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1043,6 +1040,11 @@ class CloudControlsPartnerCoreAsyncClient:
                 automatically.
 
         """
+        warnings.warn(
+            "CloudControlsPartnerCoreAsyncClient.list_access_approval_requests is deprecated",
+            DeprecationWarning,
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
@@ -1096,6 +1098,8 @@ class CloudControlsPartnerCoreAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -1144,7 +1148,7 @@ class CloudControlsPartnerCoreAsyncClient:
                 The request object. Message for getting a Partner
             name (:class:`str`):
                 Required. Format:
-                organizations/{organization}/locations/{location}/partner
+                ``organizations/{organization}/locations/{location}/partner``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this

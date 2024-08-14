@@ -38,6 +38,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1344,12 +1345,7 @@ async def test_create_data_store_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_data_store
         ] = mock_object
@@ -1763,12 +1759,7 @@ async def test_get_data_store_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_data_store
         ] = mock_object
@@ -2150,12 +2141,7 @@ async def test_list_data_stores_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_data_stores
         ] = mock_object
@@ -2394,12 +2380,16 @@ def test_list_data_stores_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_data_stores(request={})
+        pager = client.list_data_stores(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -2719,12 +2709,7 @@ async def test_delete_data_store_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_data_store
         ] = mock_object
@@ -3124,12 +3109,7 @@ async def test_update_data_store_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_data_store
         ] = mock_object
@@ -3539,12 +3519,7 @@ async def test_get_document_processing_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_document_processing_config
         ] = mock_object
@@ -3928,12 +3903,7 @@ async def test_update_document_processing_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_document_processing_config
         ] = mock_object
@@ -4189,6 +4159,12 @@ def test_create_data_store_rest(request_type):
         "default_schema_id": "default_schema_id_value",
         "content_config": 1,
         "create_time": {"seconds": 751, "nanos": 543},
+        "language_info": {
+            "language_code": "language_code_value",
+            "normalized_language_code": "normalized_language_code_value",
+            "language": "language_value",
+            "region": "region_value",
+        },
         "idp_config": {
             "idp_type": 1,
             "external_idp_config": {"workforce_pool_name": "workforce_pool_name_value"},
@@ -4405,6 +4381,7 @@ def test_create_data_store_rest_required_fields(
         (
             "create_advanced_site_search",
             "data_store_id",
+            "skip_default_schema_creation",
         )
     )
     jsonified_request.update(unset_fields)
@@ -4471,6 +4448,7 @@ def test_create_data_store_rest_unset_required_fields():
             (
                 "createAdvancedSiteSearch",
                 "dataStoreId",
+                "skipDefaultSchemaCreation",
             )
         )
         & set(
@@ -5653,6 +5631,12 @@ def test_update_data_store_rest(request_type):
         "default_schema_id": "default_schema_id_value",
         "content_config": 1,
         "create_time": {"seconds": 751, "nanos": 543},
+        "language_info": {
+            "language_code": "language_code_value",
+            "normalized_language_code": "normalized_language_code_value",
+            "language": "language_value",
+            "region": "region_value",
+        },
         "idp_config": {
             "idp_type": 1,
             "external_idp_config": {"workforce_pool_name": "workforce_pool_name_value"},

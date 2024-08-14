@@ -38,6 +38,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1271,12 +1272,7 @@ async def test_list_test_cases_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_test_cases
         ] = mock_object
@@ -1514,12 +1510,16 @@ def test_list_test_cases_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_test_cases(request={})
+        pager = client.list_test_cases(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -1836,12 +1836,7 @@ async def test_batch_delete_test_cases_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.batch_delete_test_cases
         ] = mock_object
@@ -2215,12 +2210,7 @@ async def test_get_test_case_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_test_case
         ] = mock_object
@@ -2597,12 +2587,7 @@ async def test_create_test_case_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_test_case
         ] = mock_object
@@ -2989,12 +2974,7 @@ async def test_update_test_case_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_test_case
         ] = mock_object
@@ -3375,12 +3355,7 @@ async def test_run_test_case_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.run_test_case
         ] = mock_object
@@ -3676,12 +3651,7 @@ async def test_batch_run_test_cases_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.batch_run_test_cases
         ] = mock_object
@@ -3982,12 +3952,7 @@ async def test_calculate_coverage_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.calculate_coverage
         ] = mock_object
@@ -4286,12 +4251,7 @@ async def test_import_test_cases_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.import_test_cases
         ] = mock_object
@@ -4593,12 +4553,7 @@ async def test_export_test_cases_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.export_test_cases
         ] = mock_object
@@ -4904,12 +4859,7 @@ async def test_list_test_case_results_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_test_case_results
         ] = mock_object
@@ -5159,12 +5109,16 @@ def test_list_test_case_results_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_test_case_results(request={})
+        pager = client.list_test_case_results(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -5499,12 +5453,7 @@ async def test_get_test_case_result_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_test_case_result
         ] = mock_object
@@ -6868,14 +6817,23 @@ def test_create_test_case_rest(request_type):
                             ],
                             "advanced_settings": {
                                 "audio_export_gcs_destination": {"uri": "uri_value"},
+                                "speech_settings": {
+                                    "endpointer_sensitivity": 2402,
+                                    "no_speech_timeout": {},
+                                    "use_timeout_based_endpointing": True,
+                                    "models": {},
+                                },
                                 "dtmf_settings": {
                                     "enabled": True,
                                     "max_digits": 1065,
                                     "finish_digit": "finish_digit_value",
+                                    "interdigit_timeout_duration": {},
+                                    "endpointing_timeout_duration": {},
                                 },
                                 "logging_settings": {
                                     "enable_stackdriver_logging": True,
                                     "enable_interaction_logging": True,
+                                    "enable_consent_based_redaction": True,
                                 },
                             },
                             "enable_generative_fallback": True,
@@ -7502,14 +7460,23 @@ def test_update_test_case_rest(request_type):
                             ],
                             "advanced_settings": {
                                 "audio_export_gcs_destination": {"uri": "uri_value"},
+                                "speech_settings": {
+                                    "endpointer_sensitivity": 2402,
+                                    "no_speech_timeout": {},
+                                    "use_timeout_based_endpointing": True,
+                                    "models": {},
+                                },
                                 "dtmf_settings": {
                                     "enabled": True,
                                     "max_digits": 1065,
                                     "finish_digit": "finish_digit_value",
+                                    "interdigit_timeout_duration": {},
+                                    "endpointing_timeout_duration": {},
                                 },
                                 "logging_settings": {
                                     "enable_stackdriver_logging": True,
                                     "enable_interaction_logging": True,
+                                    "enable_consent_based_redaction": True,
                                 },
                             },
                             "enable_generative_fallback": True,

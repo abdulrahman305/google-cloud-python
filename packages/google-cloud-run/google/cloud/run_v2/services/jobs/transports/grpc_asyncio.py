@@ -174,7 +174,8 @@ class JobsGrpcAsyncIOTransport(JobsTransport):
 
         if isinstance(channel, aio.Channel):
             # Ignore credentials if a channel was passed.
-            credentials = False
+            credentials = None
+            self._ignore_credentials = True
             # If a channel was explicitly provided, set it.
             self._grpc_channel = channel
             self._ssl_channel_credentials = None
@@ -315,7 +316,8 @@ class JobsGrpcAsyncIOTransport(JobsTransport):
     ) -> Callable[[job.ListJobsRequest], Awaitable[job.ListJobsResponse]]:
         r"""Return a callable for the list jobs method over gRPC.
 
-        Lists Jobs.
+        Lists Jobs. Results are sorted by creation time,
+        descending.
 
         Returns:
             Callable[[~.ListJobsRequest],

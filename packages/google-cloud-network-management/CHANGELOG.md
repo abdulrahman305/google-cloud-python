@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-management-v1.17.3...google-cloud-network-management-v1.18.0) (2024-08-08)
+
+
+### Features
+
+* expose the new vpcflowlogs api proto ([9cda0c1](https://github.com/googleapis/google-cloud-python/commit/9cda0c1985d0dfa1204c4dae324278b1b4e70693))
+
+## [1.17.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-management-v1.17.2...google-cloud-network-management-v1.17.3) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([d95af77](https://github.com/googleapis/google-cloud-python/commit/d95af77248f0935a5fe3dba1fccc75124c8b1451))
+
+## [1.17.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-management-v1.17.1...google-cloud-network-management-v1.17.2) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12868](https://github.com/googleapis/google-cloud-python/issues/12868)) ([0e39c1a](https://github.com/googleapis/google-cloud-python/commit/0e39c1a0ab46757bcf80a178d9bd422f6dcb24c6))
+
 ## [1.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-management-v1.17.0...google-cloud-network-management-v1.17.1) (2024-03-28)
 
 

@@ -1028,6 +1028,8 @@ class CloudControlsPartnerCoreClient(metaclass=CloudControlsPartnerCoreClientMet
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -1246,6 +1248,8 @@ class CloudControlsPartnerCoreClient(metaclass=CloudControlsPartnerCoreClientMet
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -1471,7 +1475,8 @@ class CloudControlsPartnerCoreClient(metaclass=CloudControlsPartnerCoreClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, str]] = (),
     ) -> pagers.ListAccessApprovalRequestsPager:
-        r"""Lists access requests associated with a workload
+        r"""Deprecated: Only returns access approval requests
+        directly associated with an assured workload folder.
 
         .. code-block:: python
 
@@ -1526,6 +1531,11 @@ class CloudControlsPartnerCoreClient(metaclass=CloudControlsPartnerCoreClientMet
                 automatically.
 
         """
+        warnings.warn(
+            "CloudControlsPartnerCoreClient.list_access_approval_requests is deprecated",
+            DeprecationWarning,
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
@@ -1578,6 +1588,8 @@ class CloudControlsPartnerCoreClient(metaclass=CloudControlsPartnerCoreClientMet
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 

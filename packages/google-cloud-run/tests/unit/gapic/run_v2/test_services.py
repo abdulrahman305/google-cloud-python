@@ -39,6 +39,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1247,12 +1248,7 @@ async def test_create_service_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_service
         ] = mock_object
@@ -1656,12 +1652,7 @@ async def test_get_service_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_service
         ] = mock_object
@@ -2026,12 +2017,7 @@ async def test_list_services_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_services
         ] = mock_object
@@ -2234,9 +2220,13 @@ def test_list_services_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
-        pager = client.list_services(request={})
+        retry = retries.Retry()
+        timeout = 5
+        pager = client.list_services(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -2542,12 +2532,7 @@ async def test_update_service_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_service
         ] = mock_object
@@ -2644,6 +2629,7 @@ def test_update_service_flattened():
         # using the keyword arguments to the method.
         client.update_service(
             service=gcr_service.Service(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
 
         # Establish that the underlying call was made with the expected
@@ -2652,6 +2638,9 @@ def test_update_service_flattened():
         _, args, _ = call.mock_calls[0]
         arg = args[0].service
         mock_val = gcr_service.Service(name="name_value")
+        assert arg == mock_val
+        arg = args[0].update_mask
+        mock_val = field_mask_pb2.FieldMask(paths=["paths_value"])
         assert arg == mock_val
 
 
@@ -2666,6 +2655,7 @@ def test_update_service_flattened_error():
         client.update_service(
             gcr_service.UpdateServiceRequest(),
             service=gcr_service.Service(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
 
 
@@ -2687,6 +2677,7 @@ async def test_update_service_flattened_async():
         # using the keyword arguments to the method.
         response = await client.update_service(
             service=gcr_service.Service(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
 
         # Establish that the underlying call was made with the expected
@@ -2695,6 +2686,9 @@ async def test_update_service_flattened_async():
         _, args, _ = call.mock_calls[0]
         arg = args[0].service
         mock_val = gcr_service.Service(name="name_value")
+        assert arg == mock_val
+        arg = args[0].update_mask
+        mock_val = field_mask_pb2.FieldMask(paths=["paths_value"])
         assert arg == mock_val
 
 
@@ -2710,6 +2704,7 @@ async def test_update_service_flattened_error_async():
         await client.update_service(
             gcr_service.UpdateServiceRequest(),
             service=gcr_service.Service(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
 
 
@@ -2878,12 +2873,7 @@ async def test_delete_service_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_service
         ] = mock_object
@@ -3216,12 +3206,7 @@ async def test_get_iam_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_iam_policy
         ] = mock_object
@@ -3523,12 +3508,7 @@ async def test_set_iam_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_iam_policy
         ] = mock_object
@@ -3840,12 +3820,7 @@ async def test_test_iam_permissions_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.test_iam_permissions
         ] = mock_object
@@ -4023,6 +3998,7 @@ def test_create_service_rest(request_type):
         "launch_stage": 6,
         "binary_authorization": {
             "use_default": True,
+            "policy": "policy_value",
             "breakglass_justification": "breakglass_justification_value",
         },
         "template": {
@@ -5282,6 +5258,7 @@ def test_update_service_rest(request_type):
         "launch_stage": 6,
         "binary_authorization": {
             "use_default": True,
+            "policy": "policy_value",
             "breakglass_justification": "breakglass_justification_value",
         },
         "template": {
@@ -5575,6 +5552,7 @@ def test_update_service_rest_required_fields(
     assert not set(unset_fields) - set(
         (
             "allow_missing",
+            "update_mask",
             "validate_only",
         )
     )
@@ -5631,6 +5609,7 @@ def test_update_service_rest_unset_required_fields():
         set(
             (
                 "allowMissing",
+                "updateMask",
                 "validateOnly",
             )
         )
@@ -5740,6 +5719,7 @@ def test_update_service_rest_flattened():
         # get truthy value for each flattened field
         mock_args = dict(
             service=gcr_service.Service(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
         mock_args.update(sample_request)
 
@@ -5775,6 +5755,7 @@ def test_update_service_rest_flattened_error(transport: str = "rest"):
         client.update_service(
             gcr_service.UpdateServiceRequest(),
             service=gcr_service.Service(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
 
 

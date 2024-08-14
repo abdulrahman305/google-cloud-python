@@ -38,12 +38,14 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.location import locations_pb2
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account
+from google.protobuf import duration_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
 from google.protobuf import json_format
@@ -1239,12 +1241,7 @@ async def test_list_agents_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_agents
         ] = mock_object
@@ -1482,12 +1479,16 @@ def test_list_agents_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_agents(request={})
+        pager = client.list_agents(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -1666,6 +1667,7 @@ def test_get_agent(request_type, transport: str = "grpc"):
             security_settings="security_settings_value",
             enable_stackdriver_logging=True,
             enable_spell_correction=True,
+            enable_multi_language_training=True,
             locked=True,
         )
         response = client.get_agent(request)
@@ -1689,6 +1691,7 @@ def test_get_agent(request_type, transport: str = "grpc"):
     assert response.security_settings == "security_settings_value"
     assert response.enable_stackdriver_logging is True
     assert response.enable_spell_correction is True
+    assert response.enable_multi_language_training is True
     assert response.locked is True
 
 
@@ -1799,6 +1802,7 @@ async def test_get_agent_empty_call_async():
                 security_settings="security_settings_value",
                 enable_stackdriver_logging=True,
                 enable_spell_correction=True,
+                enable_multi_language_training=True,
                 locked=True,
             )
         )
@@ -1829,12 +1833,7 @@ async def test_get_agent_async_use_cached_wrapped_rpc(transport: str = "grpc_asy
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_agent
         ] = mock_object
@@ -1881,6 +1880,7 @@ async def test_get_agent_async(
                 security_settings="security_settings_value",
                 enable_stackdriver_logging=True,
                 enable_spell_correction=True,
+                enable_multi_language_training=True,
                 locked=True,
             )
         )
@@ -1905,6 +1905,7 @@ async def test_get_agent_async(
     assert response.security_settings == "security_settings_value"
     assert response.enable_stackdriver_logging is True
     assert response.enable_spell_correction is True
+    assert response.enable_multi_language_training is True
     assert response.locked is True
 
 
@@ -2084,6 +2085,7 @@ def test_create_agent(request_type, transport: str = "grpc"):
             security_settings="security_settings_value",
             enable_stackdriver_logging=True,
             enable_spell_correction=True,
+            enable_multi_language_training=True,
             locked=True,
         )
         response = client.create_agent(request)
@@ -2107,6 +2109,7 @@ def test_create_agent(request_type, transport: str = "grpc"):
     assert response.security_settings == "security_settings_value"
     assert response.enable_stackdriver_logging is True
     assert response.enable_spell_correction is True
+    assert response.enable_multi_language_training is True
     assert response.locked is True
 
 
@@ -2217,6 +2220,7 @@ async def test_create_agent_empty_call_async():
                 security_settings="security_settings_value",
                 enable_stackdriver_logging=True,
                 enable_spell_correction=True,
+                enable_multi_language_training=True,
                 locked=True,
             )
         )
@@ -2249,12 +2253,7 @@ async def test_create_agent_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_agent
         ] = mock_object
@@ -2301,6 +2300,7 @@ async def test_create_agent_async(
                 security_settings="security_settings_value",
                 enable_stackdriver_logging=True,
                 enable_spell_correction=True,
+                enable_multi_language_training=True,
                 locked=True,
             )
         )
@@ -2325,6 +2325,7 @@ async def test_create_agent_async(
     assert response.security_settings == "security_settings_value"
     assert response.enable_stackdriver_logging is True
     assert response.enable_spell_correction is True
+    assert response.enable_multi_language_training is True
     assert response.locked is True
 
 
@@ -2514,6 +2515,7 @@ def test_update_agent(request_type, transport: str = "grpc"):
             security_settings="security_settings_value",
             enable_stackdriver_logging=True,
             enable_spell_correction=True,
+            enable_multi_language_training=True,
             locked=True,
         )
         response = client.update_agent(request)
@@ -2537,6 +2539,7 @@ def test_update_agent(request_type, transport: str = "grpc"):
     assert response.security_settings == "security_settings_value"
     assert response.enable_stackdriver_logging is True
     assert response.enable_spell_correction is True
+    assert response.enable_multi_language_training is True
     assert response.locked is True
 
 
@@ -2643,6 +2646,7 @@ async def test_update_agent_empty_call_async():
                 security_settings="security_settings_value",
                 enable_stackdriver_logging=True,
                 enable_spell_correction=True,
+                enable_multi_language_training=True,
                 locked=True,
             )
         )
@@ -2675,12 +2679,7 @@ async def test_update_agent_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_agent
         ] = mock_object
@@ -2727,6 +2726,7 @@ async def test_update_agent_async(
                 security_settings="security_settings_value",
                 enable_stackdriver_logging=True,
                 enable_spell_correction=True,
+                enable_multi_language_training=True,
                 locked=True,
             )
         )
@@ -2751,6 +2751,7 @@ async def test_update_agent_async(
     assert response.security_settings == "security_settings_value"
     assert response.enable_stackdriver_logging is True
     assert response.enable_spell_correction is True
+    assert response.enable_multi_language_training is True
     assert response.locked is True
 
 
@@ -3065,12 +3066,7 @@ async def test_delete_agent_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_agent
         ] = mock_object
@@ -3428,12 +3424,7 @@ async def test_export_agent_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.export_agent
         ] = mock_object
@@ -3717,12 +3708,7 @@ async def test_restore_agent_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.restore_agent
         ] = mock_object
@@ -4007,12 +3993,7 @@ async def test_validate_agent_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.validate_agent
         ] = mock_object
@@ -4309,12 +4290,7 @@ async def test_get_agent_validation_result_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_agent_validation_result
         ] = mock_object
@@ -4706,12 +4682,7 @@ async def test_get_generative_settings_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_generative_settings
         ] = mock_object
@@ -5109,12 +5080,7 @@ async def test_update_generative_settings_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_generative_settings
         ] = mock_object
@@ -5742,6 +5708,7 @@ def test_get_agent_rest(request_type):
             security_settings="security_settings_value",
             enable_stackdriver_logging=True,
             enable_spell_correction=True,
+            enable_multi_language_training=True,
             locked=True,
         )
 
@@ -5769,6 +5736,7 @@ def test_get_agent_rest(request_type):
     assert response.security_settings == "security_settings_value"
     assert response.enable_stackdriver_logging is True
     assert response.enable_spell_correction is True
+    assert response.enable_multi_language_training is True
     assert response.locked is True
 
 
@@ -6057,17 +6025,27 @@ def test_create_agent_rest(request_type):
         "security_settings": "security_settings_value",
         "enable_stackdriver_logging": True,
         "enable_spell_correction": True,
+        "enable_multi_language_training": True,
         "locked": True,
         "advanced_settings": {
             "audio_export_gcs_destination": {"uri": "uri_value"},
+            "speech_settings": {
+                "endpointer_sensitivity": 2402,
+                "no_speech_timeout": {"seconds": 751, "nanos": 543},
+                "use_timeout_based_endpointing": True,
+                "models": {},
+            },
             "dtmf_settings": {
                 "enabled": True,
                 "max_digits": 1065,
                 "finish_digit": "finish_digit_value",
+                "interdigit_timeout_duration": {},
+                "endpointing_timeout_duration": {},
             },
             "logging_settings": {
                 "enable_stackdriver_logging": True,
                 "enable_interaction_logging": True,
+                "enable_consent_based_redaction": True,
             },
         },
         "git_integration_settings": {
@@ -6082,6 +6060,7 @@ def test_create_agent_rest(request_type):
         "text_to_speech_settings": {"synthesize_speech_configs": {}},
         "gen_app_builder_settings": {"engine": "engine_value"},
         "answer_feedback_settings": {"enable_answer_feedback": True},
+        "personalization_settings": {"default_end_user_metadata": {"fields": {}}},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -6167,6 +6146,7 @@ def test_create_agent_rest(request_type):
             security_settings="security_settings_value",
             enable_stackdriver_logging=True,
             enable_spell_correction=True,
+            enable_multi_language_training=True,
             locked=True,
         )
 
@@ -6194,6 +6174,7 @@ def test_create_agent_rest(request_type):
     assert response.security_settings == "security_settings_value"
     assert response.enable_stackdriver_logging is True
     assert response.enable_spell_correction is True
+    assert response.enable_multi_language_training is True
     assert response.locked is True
 
 
@@ -6495,17 +6476,27 @@ def test_update_agent_rest(request_type):
         "security_settings": "security_settings_value",
         "enable_stackdriver_logging": True,
         "enable_spell_correction": True,
+        "enable_multi_language_training": True,
         "locked": True,
         "advanced_settings": {
             "audio_export_gcs_destination": {"uri": "uri_value"},
+            "speech_settings": {
+                "endpointer_sensitivity": 2402,
+                "no_speech_timeout": {"seconds": 751, "nanos": 543},
+                "use_timeout_based_endpointing": True,
+                "models": {},
+            },
             "dtmf_settings": {
                 "enabled": True,
                 "max_digits": 1065,
                 "finish_digit": "finish_digit_value",
+                "interdigit_timeout_duration": {},
+                "endpointing_timeout_duration": {},
             },
             "logging_settings": {
                 "enable_stackdriver_logging": True,
                 "enable_interaction_logging": True,
+                "enable_consent_based_redaction": True,
             },
         },
         "git_integration_settings": {
@@ -6520,6 +6511,7 @@ def test_update_agent_rest(request_type):
         "text_to_speech_settings": {"synthesize_speech_configs": {}},
         "gen_app_builder_settings": {"engine": "engine_value"},
         "answer_feedback_settings": {"enable_answer_feedback": True},
+        "personalization_settings": {"default_end_user_metadata": {"fields": {}}},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -6605,6 +6597,7 @@ def test_update_agent_rest(request_type):
             security_settings="security_settings_value",
             enable_stackdriver_logging=True,
             enable_spell_correction=True,
+            enable_multi_language_training=True,
             locked=True,
         )
 
@@ -6632,6 +6625,7 @@ def test_update_agent_rest(request_type):
     assert response.security_settings == "security_settings_value"
     assert response.enable_stackdriver_logging is True
     assert response.enable_spell_correction is True
+    assert response.enable_multi_language_training is True
     assert response.locked is True
 
 

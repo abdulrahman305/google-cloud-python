@@ -158,6 +158,10 @@ class DlpServiceRestInterceptor:
                 logging.log(f"Received request: {request}")
                 return request, metadata
 
+            def pre_delete_file_store_data_profile(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
             def pre_delete_inspect_template(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -215,6 +219,14 @@ class DlpServiceRestInterceptor:
                 return request, metadata
 
             def post_get_dlp_job(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_get_file_store_data_profile(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_file_store_data_profile(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -319,6 +331,14 @@ class DlpServiceRestInterceptor:
                 return request, metadata
 
             def post_list_dlp_jobs(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_list_file_store_data_profiles(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_file_store_data_profiles(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -693,6 +713,18 @@ class DlpServiceRestInterceptor:
         """
         return request, metadata
 
+    def pre_delete_file_store_data_profile(
+        self,
+        request: dlp.DeleteFileStoreDataProfileRequest,
+        metadata: Sequence[Tuple[str, str]],
+    ) -> Tuple[dlp.DeleteFileStoreDataProfileRequest, Sequence[Tuple[str, str]]]:
+        """Pre-rpc interceptor for delete_file_store_data_profile
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the DlpService server.
+        """
+        return request, metadata
+
     def pre_delete_inspect_template(
         self,
         request: dlp.DeleteInspectTemplateRequest,
@@ -849,6 +881,29 @@ class DlpServiceRestInterceptor:
 
     def post_get_dlp_job(self, response: dlp.DlpJob) -> dlp.DlpJob:
         """Post-rpc interceptor for get_dlp_job
+
+        Override in a subclass to manipulate the response
+        after it is returned by the DlpService server but before
+        it is returned to user code.
+        """
+        return response
+
+    def pre_get_file_store_data_profile(
+        self,
+        request: dlp.GetFileStoreDataProfileRequest,
+        metadata: Sequence[Tuple[str, str]],
+    ) -> Tuple[dlp.GetFileStoreDataProfileRequest, Sequence[Tuple[str, str]]]:
+        """Pre-rpc interceptor for get_file_store_data_profile
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the DlpService server.
+        """
+        return request, metadata
+
+    def post_get_file_store_data_profile(
+        self, response: dlp.FileStoreDataProfile
+    ) -> dlp.FileStoreDataProfile:
+        """Post-rpc interceptor for get_file_store_data_profile
 
         Override in a subclass to manipulate the response
         after it is returned by the DlpService server but before
@@ -1136,6 +1191,29 @@ class DlpServiceRestInterceptor:
         self, response: dlp.ListDlpJobsResponse
     ) -> dlp.ListDlpJobsResponse:
         """Post-rpc interceptor for list_dlp_jobs
+
+        Override in a subclass to manipulate the response
+        after it is returned by the DlpService server but before
+        it is returned to user code.
+        """
+        return response
+
+    def pre_list_file_store_data_profiles(
+        self,
+        request: dlp.ListFileStoreDataProfilesRequest,
+        metadata: Sequence[Tuple[str, str]],
+    ) -> Tuple[dlp.ListFileStoreDataProfilesRequest, Sequence[Tuple[str, str]]]:
+        """Pre-rpc interceptor for list_file_store_data_profiles
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the DlpService server.
+        """
+        return request, metadata
+
+    def post_list_file_store_data_profiles(
+        self, response: dlp.ListFileStoreDataProfilesResponse
+    ) -> dlp.ListFileStoreDataProfilesResponse:
+        """Post-rpc interceptor for list_file_store_data_profiles
 
         Override in a subclass to manipulate the response
         after it is returned by the DlpService server but before
@@ -1812,6 +1890,11 @@ class DlpServiceRestTransport(DlpServiceTransport):
                     "uri": "/v2/{parent=projects/*/locations/*}/connections",
                     "body": "*",
                 },
+                {
+                    "method": "post",
+                    "uri": "/v2/{parent=organizations/*/locations/*}/connections",
+                    "body": "*",
+                },
             ]
             request, metadata = self._interceptor.pre_create_connection(
                 request, metadata
@@ -2237,7 +2320,7 @@ class DlpServiceRestTransport(DlpServiceTransport):
             http_options: List[Dict[str, str]] = [
                 {
                     "method": "post",
-                    "uri": "/v2/{parent=organizations/*}/inspectTemplates",
+                    "uri": "/v2/{parent=projects/*/locations/*}/inspectTemplates",
                     "body": "*",
                 },
                 {
@@ -2252,7 +2335,7 @@ class DlpServiceRestTransport(DlpServiceTransport):
                 },
                 {
                     "method": "post",
-                    "uri": "/v2/{parent=projects/*/locations/*}/inspectTemplates",
+                    "uri": "/v2/{parent=organizations/*}/inspectTemplates",
                     "body": "*",
                 },
             ]
@@ -2655,6 +2738,10 @@ class DlpServiceRestTransport(DlpServiceTransport):
                     "method": "delete",
                     "uri": "/v2/{name=projects/*/locations/*/connections/*}",
                 },
+                {
+                    "method": "delete",
+                    "uri": "/v2/{name=organizations/*/locations/*/connections/*}",
+                },
             ]
             request, metadata = self._interceptor.pre_delete_connection(
                 request, metadata
@@ -2938,6 +3025,87 @@ class DlpServiceRestTransport(DlpServiceTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+    class _DeleteFileStoreDataProfile(DlpServiceRestStub):
+        def __hash__(self):
+            return hash("DeleteFileStoreDataProfile")
+
+        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
+
+        @classmethod
+        def _get_unset_required_fields(cls, message_dict):
+            return {
+                k: v
+                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
+                if k not in message_dict
+            }
+
+        def __call__(
+            self,
+            request: dlp.DeleteFileStoreDataProfileRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, str]] = (),
+        ):
+            r"""Call the delete file store data
+            profile method over HTTP.
+
+                Args:
+                    request (~.dlp.DeleteFileStoreDataProfileRequest):
+                        The request object. Request message for
+                    DeleteFileStoreProfile.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, str]]): Strings which should be
+                        sent along with the request as metadata.
+            """
+
+            http_options: List[Dict[str, str]] = [
+                {
+                    "method": "delete",
+                    "uri": "/v2/{name=organizations/*/locations/*/fileStoreDataProfiles/*}",
+                },
+                {
+                    "method": "delete",
+                    "uri": "/v2/{name=projects/*/locations/*/fileStoreDataProfiles/*}",
+                },
+            ]
+            request, metadata = self._interceptor.pre_delete_file_store_data_profile(
+                request, metadata
+            )
+            pb_request = dlp.DeleteFileStoreDataProfileRequest.pb(request)
+            transcoded_request = path_template.transcode(http_options, pb_request)
+
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+
+            # Jsonify the query params
+            query_params = json.loads(
+                json_format.MessageToJson(
+                    transcoded_request["query_params"],
+                    use_integers_for_enums=True,
+                )
+            )
+            query_params.update(self._get_unset_required_fields(query_params))
+
+            query_params["$alt"] = "json;enum-encoding=int"
+
+            # Send the request
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(self._session, method)(
+                "{host}{uri}".format(host=self._host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
     class _DeleteInspectTemplate(DlpServiceRestStub):
         def __hash__(self):
             return hash("DeleteInspectTemplate")
@@ -2976,7 +3144,7 @@ class DlpServiceRestTransport(DlpServiceTransport):
             http_options: List[Dict[str, str]] = [
                 {
                     "method": "delete",
-                    "uri": "/v2/{name=organizations/*/inspectTemplates/*}",
+                    "uri": "/v2/{name=projects/*/locations/*/inspectTemplates/*}",
                 },
                 {
                     "method": "delete",
@@ -2988,7 +3156,7 @@ class DlpServiceRestTransport(DlpServiceTransport):
                 },
                 {
                     "method": "delete",
-                    "uri": "/v2/{name=projects/*/locations/*/inspectTemplates/*}",
+                    "uri": "/v2/{name=organizations/*/inspectTemplates/*}",
                 },
             ]
             request, metadata = self._interceptor.pre_delete_inspect_template(
@@ -3497,6 +3665,10 @@ class DlpServiceRestTransport(DlpServiceTransport):
                     "method": "get",
                     "uri": "/v2/{name=projects/*/locations/*/connections/*}",
                 },
+                {
+                    "method": "get",
+                    "uri": "/v2/{name=organizations/*/locations/*/connections/*}",
+                },
             ]
             request, metadata = self._interceptor.pre_get_connection(request, metadata)
             pb_request = dlp.GetConnectionRequest.pb(request)
@@ -3834,6 +4006,102 @@ class DlpServiceRestTransport(DlpServiceTransport):
             resp = self._interceptor.post_get_dlp_job(resp)
             return resp
 
+    class _GetFileStoreDataProfile(DlpServiceRestStub):
+        def __hash__(self):
+            return hash("GetFileStoreDataProfile")
+
+        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
+
+        @classmethod
+        def _get_unset_required_fields(cls, message_dict):
+            return {
+                k: v
+                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
+                if k not in message_dict
+            }
+
+        def __call__(
+            self,
+            request: dlp.GetFileStoreDataProfileRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, str]] = (),
+        ) -> dlp.FileStoreDataProfile:
+            r"""Call the get file store data
+            profile method over HTTP.
+
+                Args:
+                    request (~.dlp.GetFileStoreDataProfileRequest):
+                        The request object. Request to get a file store data
+                    profile.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, str]]): Strings which should be
+                        sent along with the request as metadata.
+
+                Returns:
+                    ~.dlp.FileStoreDataProfile:
+                        The profile for a file store.
+
+                    -  Cloud Storage: maps 1:1 with a bucket.
+
+            """
+
+            http_options: List[Dict[str, str]] = [
+                {
+                    "method": "get",
+                    "uri": "/v2/{name=organizations/*/locations/*/fileStoreDataProfiles/*}",
+                },
+                {
+                    "method": "get",
+                    "uri": "/v2/{name=projects/*/locations/*/fileStoreDataProfiles/*}",
+                },
+            ]
+            request, metadata = self._interceptor.pre_get_file_store_data_profile(
+                request, metadata
+            )
+            pb_request = dlp.GetFileStoreDataProfileRequest.pb(request)
+            transcoded_request = path_template.transcode(http_options, pb_request)
+
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+
+            # Jsonify the query params
+            query_params = json.loads(
+                json_format.MessageToJson(
+                    transcoded_request["query_params"],
+                    use_integers_for_enums=True,
+                )
+            )
+            query_params.update(self._get_unset_required_fields(query_params))
+
+            query_params["$alt"] = "json;enum-encoding=int"
+
+            # Send the request
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(self._session, method)(
+                "{host}{uri}".format(host=self._host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = dlp.FileStoreDataProfile()
+            pb_resp = dlp.FileStoreDataProfile.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+            resp = self._interceptor.post_get_file_store_data_profile(resp)
+            return resp
+
     class _GetInspectTemplate(DlpServiceRestStub):
         def __hash__(self):
             return hash("GetInspectTemplate")
@@ -3883,7 +4151,7 @@ class DlpServiceRestTransport(DlpServiceTransport):
             http_options: List[Dict[str, str]] = [
                 {
                     "method": "get",
-                    "uri": "/v2/{name=organizations/*/inspectTemplates/*}",
+                    "uri": "/v2/{name=projects/*/locations/*/inspectTemplates/*}",
                 },
                 {
                     "method": "get",
@@ -3895,7 +4163,7 @@ class DlpServiceRestTransport(DlpServiceTransport):
                 },
                 {
                     "method": "get",
-                    "uri": "/v2/{name=projects/*/locations/*/inspectTemplates/*}",
+                    "uri": "/v2/{name=organizations/*/inspectTemplates/*}",
                 },
             ]
             request, metadata = self._interceptor.pre_get_inspect_template(
@@ -4747,6 +5015,10 @@ class DlpServiceRestTransport(DlpServiceTransport):
                     "method": "get",
                     "uri": "/v2/{parent=projects/*/locations/*}/connections",
                 },
+                {
+                    "method": "get",
+                    "uri": "/v2/{parent=organizations/*/locations/*}/connections",
+                },
             ]
             request, metadata = self._interceptor.pre_list_connections(
                 request, metadata
@@ -5083,6 +5355,103 @@ class DlpServiceRestTransport(DlpServiceTransport):
             resp = self._interceptor.post_list_dlp_jobs(resp)
             return resp
 
+    class _ListFileStoreDataProfiles(DlpServiceRestStub):
+        def __hash__(self):
+            return hash("ListFileStoreDataProfiles")
+
+        __REQUIRED_FIELDS_DEFAULT_VALUES: Dict[str, Any] = {}
+
+        @classmethod
+        def _get_unset_required_fields(cls, message_dict):
+            return {
+                k: v
+                for k, v in cls.__REQUIRED_FIELDS_DEFAULT_VALUES.items()
+                if k not in message_dict
+            }
+
+        def __call__(
+            self,
+            request: dlp.ListFileStoreDataProfilesRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, str]] = (),
+        ) -> dlp.ListFileStoreDataProfilesResponse:
+            r"""Call the list file store data
+            profiles method over HTTP.
+
+                Args:
+                    request (~.dlp.ListFileStoreDataProfilesRequest):
+                        The request object. Request to list the file store
+                    profiles generated for a given
+                    organization or project.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, str]]): Strings which should be
+                        sent along with the request as metadata.
+
+                Returns:
+                    ~.dlp.ListFileStoreDataProfilesResponse:
+                        List of file store data profiles
+                    generated for a given organization or
+                    project.
+
+            """
+
+            http_options: List[Dict[str, str]] = [
+                {
+                    "method": "get",
+                    "uri": "/v2/{parent=organizations/*/locations/*}/fileStoreDataProfiles",
+                },
+                {
+                    "method": "get",
+                    "uri": "/v2/{parent=projects/*/locations/*}/fileStoreDataProfiles",
+                },
+            ]
+            request, metadata = self._interceptor.pre_list_file_store_data_profiles(
+                request, metadata
+            )
+            pb_request = dlp.ListFileStoreDataProfilesRequest.pb(request)
+            transcoded_request = path_template.transcode(http_options, pb_request)
+
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+
+            # Jsonify the query params
+            query_params = json.loads(
+                json_format.MessageToJson(
+                    transcoded_request["query_params"],
+                    use_integers_for_enums=True,
+                )
+            )
+            query_params.update(self._get_unset_required_fields(query_params))
+
+            query_params["$alt"] = "json;enum-encoding=int"
+
+            # Send the request
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(self._session, method)(
+                "{host}{uri}".format(host=self._host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = dlp.ListFileStoreDataProfilesResponse()
+            pb_resp = dlp.ListFileStoreDataProfilesResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+            resp = self._interceptor.post_list_file_store_data_profiles(resp)
+            return resp
+
     class _ListInfoTypes(DlpServiceRestStub):
         def __hash__(self):
             return hash("ListInfoTypes")
@@ -5207,7 +5576,7 @@ class DlpServiceRestTransport(DlpServiceTransport):
             http_options: List[Dict[str, str]] = [
                 {
                     "method": "get",
-                    "uri": "/v2/{parent=organizations/*}/inspectTemplates",
+                    "uri": "/v2/{parent=projects/*/locations/*}/inspectTemplates",
                 },
                 {
                     "method": "get",
@@ -5219,7 +5588,7 @@ class DlpServiceRestTransport(DlpServiceTransport):
                 },
                 {
                     "method": "get",
-                    "uri": "/v2/{parent=projects/*/locations/*}/inspectTemplates",
+                    "uri": "/v2/{parent=organizations/*}/inspectTemplates",
                 },
             ]
             request, metadata = self._interceptor.pre_list_inspect_templates(
@@ -5981,6 +6350,11 @@ class DlpServiceRestTransport(DlpServiceTransport):
                     "uri": "/v2/{name=projects/*/locations/*/connections/*}",
                     "body": "*",
                 },
+                {
+                    "method": "patch",
+                    "uri": "/v2/{name=organizations/*/locations/*/connections/*}",
+                    "body": "*",
+                },
             ]
             request, metadata = self._interceptor.pre_update_connection(
                 request, metadata
@@ -6303,7 +6677,7 @@ class DlpServiceRestTransport(DlpServiceTransport):
             http_options: List[Dict[str, str]] = [
                 {
                     "method": "patch",
-                    "uri": "/v2/{name=organizations/*/inspectTemplates/*}",
+                    "uri": "/v2/{name=projects/*/locations/*/inspectTemplates/*}",
                     "body": "*",
                 },
                 {
@@ -6318,7 +6692,7 @@ class DlpServiceRestTransport(DlpServiceTransport):
                 },
                 {
                     "method": "patch",
-                    "uri": "/v2/{name=projects/*/locations/*/inspectTemplates/*}",
+                    "uri": "/v2/{name=organizations/*/inspectTemplates/*}",
                     "body": "*",
                 },
             ]
@@ -6699,6 +7073,14 @@ class DlpServiceRestTransport(DlpServiceTransport):
         return self._DeleteDlpJob(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def delete_file_store_data_profile(
+        self,
+    ) -> Callable[[dlp.DeleteFileStoreDataProfileRequest], empty_pb2.Empty]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._DeleteFileStoreDataProfile(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def delete_inspect_template(
         self,
     ) -> Callable[[dlp.DeleteInspectTemplateRequest], empty_pb2.Empty]:
@@ -6771,6 +7153,14 @@ class DlpServiceRestTransport(DlpServiceTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetDlpJob(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def get_file_store_data_profile(
+        self,
+    ) -> Callable[[dlp.GetFileStoreDataProfileRequest], dlp.FileStoreDataProfile]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetFileStoreDataProfile(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def get_inspect_template(
@@ -6877,6 +7267,16 @@ class DlpServiceRestTransport(DlpServiceTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._ListDlpJobs(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def list_file_store_data_profiles(
+        self,
+    ) -> Callable[
+        [dlp.ListFileStoreDataProfilesRequest], dlp.ListFileStoreDataProfilesResponse
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListFileStoreDataProfiles(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def list_info_types(

@@ -38,6 +38,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1375,12 +1376,7 @@ async def test_list_instances_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_instances
         ] = mock_object
@@ -1621,12 +1617,16 @@ def test_list_instances_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_instances(request={})
+        pager = client.list_instances(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -1949,12 +1949,7 @@ async def test_get_instance_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_instance
         ] = mock_object
@@ -2331,12 +2326,7 @@ async def test_create_instance_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_instance
         ] = mock_object
@@ -2723,12 +2713,7 @@ async def test_delete_instance_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_instance
         ] = mock_object
@@ -3108,12 +3093,7 @@ async def test_list_repositories_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_repositories
         ] = mock_object
@@ -3364,12 +3344,16 @@ def test_list_repositories_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_repositories(request={})
+        pager = client.list_repositories(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -3698,12 +3682,7 @@ async def test_get_repository_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_repository
         ] = mock_object
@@ -4087,12 +4066,7 @@ async def test_create_repository_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_repository
         ] = mock_object
@@ -4497,12 +4471,7 @@ async def test_delete_repository_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_repository
         ] = mock_object
@@ -4893,12 +4862,7 @@ async def test_get_iam_policy_repo_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_iam_policy_repo
         ] = mock_object
@@ -5304,12 +5268,7 @@ async def test_set_iam_policy_repo_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_iam_policy_repo
         ] = mock_object
@@ -5714,12 +5673,7 @@ async def test_test_iam_permissions_repo_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.test_iam_permissions_repo
         ] = mock_object
@@ -6662,6 +6616,12 @@ def test_create_instance_rest(request_type):
         "create_time": {"seconds": 751, "nanos": 543},
         "update_time": {},
         "labels": {},
+        "private_config": {
+            "is_private": True,
+            "ca_pool": "ca_pool_value",
+            "http_service_attachment": "http_service_attachment_value",
+            "ssh_service_attachment": "ssh_service_attachment_value",
+        },
         "state": 1,
         "state_note": 1,
         "kms_key": "kms_key_value",
@@ -10357,11 +10317,37 @@ def test_secure_source_manager_grpc_lro_async_client():
     assert transport.operations_client is transport.operations_client
 
 
-def test_crypto_key_path():
+def test_ca_pool_path():
     project = "squid"
     location = "clam"
-    key_ring = "whelk"
-    crypto_key = "octopus"
+    ca_pool = "whelk"
+    expected = "projects/{project}/locations/{location}/caPools/{ca_pool}".format(
+        project=project,
+        location=location,
+        ca_pool=ca_pool,
+    )
+    actual = SecureSourceManagerClient.ca_pool_path(project, location, ca_pool)
+    assert expected == actual
+
+
+def test_parse_ca_pool_path():
+    expected = {
+        "project": "octopus",
+        "location": "oyster",
+        "ca_pool": "nudibranch",
+    }
+    path = SecureSourceManagerClient.ca_pool_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = SecureSourceManagerClient.parse_ca_pool_path(path)
+    assert expected == actual
+
+
+def test_crypto_key_path():
+    project = "cuttlefish"
+    location = "mussel"
+    key_ring = "winkle"
+    crypto_key = "nautilus"
     expected = "projects/{project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{crypto_key}".format(
         project=project,
         location=location,
@@ -10376,10 +10362,10 @@ def test_crypto_key_path():
 
 def test_parse_crypto_key_path():
     expected = {
-        "project": "oyster",
-        "location": "nudibranch",
-        "key_ring": "cuttlefish",
-        "crypto_key": "mussel",
+        "project": "scallop",
+        "location": "abalone",
+        "key_ring": "squid",
+        "crypto_key": "clam",
     }
     path = SecureSourceManagerClient.crypto_key_path(**expected)
 
@@ -10389,9 +10375,9 @@ def test_parse_crypto_key_path():
 
 
 def test_instance_path():
-    project = "winkle"
-    location = "nautilus"
-    instance = "scallop"
+    project = "whelk"
+    location = "octopus"
+    instance = "oyster"
     expected = "projects/{project}/locations/{location}/instances/{instance}".format(
         project=project,
         location=location,
@@ -10403,9 +10389,9 @@ def test_instance_path():
 
 def test_parse_instance_path():
     expected = {
-        "project": "abalone",
-        "location": "squid",
-        "instance": "clam",
+        "project": "nudibranch",
+        "location": "cuttlefish",
+        "instance": "mussel",
     }
     path = SecureSourceManagerClient.instance_path(**expected)
 
@@ -10415,9 +10401,9 @@ def test_parse_instance_path():
 
 
 def test_repository_path():
-    project = "whelk"
-    location = "octopus"
-    repository = "oyster"
+    project = "winkle"
+    location = "nautilus"
+    repository = "scallop"
     expected = (
         "projects/{project}/locations/{location}/repositories/{repository}".format(
             project=project,
@@ -10431,14 +10417,42 @@ def test_repository_path():
 
 def test_parse_repository_path():
     expected = {
-        "project": "nudibranch",
-        "location": "cuttlefish",
-        "repository": "mussel",
+        "project": "abalone",
+        "location": "squid",
+        "repository": "clam",
     }
     path = SecureSourceManagerClient.repository_path(**expected)
 
     # Check that the path construction is reversible.
     actual = SecureSourceManagerClient.parse_repository_path(path)
+    assert expected == actual
+
+
+def test_service_attachment_path():
+    project = "whelk"
+    region = "octopus"
+    service_attachment = "oyster"
+    expected = "projects/{project}/regions/{region}/serviceAttachments/{service_attachment}".format(
+        project=project,
+        region=region,
+        service_attachment=service_attachment,
+    )
+    actual = SecureSourceManagerClient.service_attachment_path(
+        project, region, service_attachment
+    )
+    assert expected == actual
+
+
+def test_parse_service_attachment_path():
+    expected = {
+        "project": "nudibranch",
+        "region": "cuttlefish",
+        "service_attachment": "mussel",
+    }
+    path = SecureSourceManagerClient.service_attachment_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = SecureSourceManagerClient.parse_service_attachment_path(path)
     assert expected == actual
 
 

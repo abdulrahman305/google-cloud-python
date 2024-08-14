@@ -38,6 +38,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -50,6 +51,7 @@ from google.oauth2 import service_account
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from google.protobuf import timestamp_pb2  # type: ignore
+from google.protobuf import wrappers_pb2  # type: ignore
 import grpc
 from grpc.experimental import aio
 from proto.marshal.rules import wrappers
@@ -1262,12 +1264,7 @@ async def test_list_management_servers_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_management_servers
         ] = mock_object
@@ -1519,12 +1516,16 @@ def test_list_management_servers_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_management_servers(request={})
+        pager = client.list_management_servers(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -1707,6 +1708,7 @@ def test_get_management_server(request_type, transport: str = "grpc"):
             etag="etag_value",
             oauth2_client_id="oauth2_client_id_value",
             ba_proxy_uri=["ba_proxy_uri_value"],
+            satisfies_pzi=True,
         )
         response = client.get_management_server(request)
 
@@ -1725,6 +1727,7 @@ def test_get_management_server(request_type, transport: str = "grpc"):
     assert response.etag == "etag_value"
     assert response.oauth2_client_id == "oauth2_client_id_value"
     assert response.ba_proxy_uri == ["ba_proxy_uri_value"]
+    assert response.satisfies_pzi is True
 
 
 def test_get_management_server_empty_call():
@@ -1841,6 +1844,7 @@ async def test_get_management_server_empty_call_async():
                 etag="etag_value",
                 oauth2_client_id="oauth2_client_id_value",
                 ba_proxy_uri=["ba_proxy_uri_value"],
+                satisfies_pzi=True,
             )
         )
         response = await client.get_management_server()
@@ -1872,12 +1876,7 @@ async def test_get_management_server_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_management_server
         ] = mock_object
@@ -1922,6 +1921,7 @@ async def test_get_management_server_async(
                 etag="etag_value",
                 oauth2_client_id="oauth2_client_id_value",
                 ba_proxy_uri=["ba_proxy_uri_value"],
+                satisfies_pzi=True,
             )
         )
         response = await client.get_management_server(request)
@@ -1941,6 +1941,7 @@ async def test_get_management_server_async(
     assert response.etag == "etag_value"
     assert response.oauth2_client_id == "oauth2_client_id_value"
     assert response.ba_proxy_uri == ["ba_proxy_uri_value"]
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -2279,12 +2280,7 @@ async def test_create_management_server_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_management_server
         ] = mock_object
@@ -2693,12 +2689,7 @@ async def test_delete_management_server_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_management_server
         ] = mock_object
@@ -3323,6 +3314,7 @@ def test_get_management_server_rest(request_type):
             etag="etag_value",
             oauth2_client_id="oauth2_client_id_value",
             ba_proxy_uri=["ba_proxy_uri_value"],
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -3345,6 +3337,7 @@ def test_get_management_server_rest(request_type):
     assert response.etag == "etag_value"
     assert response.oauth2_client_id == "oauth2_client_id_value"
     assert response.ba_proxy_uri == ["ba_proxy_uri_value"]
+    assert response.satisfies_pzi is True
 
 
 def test_get_management_server_rest_use_cached_wrapped_rpc():
@@ -3653,6 +3646,8 @@ def test_create_management_server_rest(request_type):
             "third_party_oauth2_client_id": "third_party_oauth2_client_id_value",
         },
         "ba_proxy_uri": ["ba_proxy_uri_value1", "ba_proxy_uri_value2"],
+        "satisfies_pzs": {"value": True},
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency

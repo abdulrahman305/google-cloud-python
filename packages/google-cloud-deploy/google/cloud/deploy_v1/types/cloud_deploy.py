@@ -146,9 +146,6 @@ __protobuf__ = proto.module(
         "PromoteReleaseRule",
         "AdvanceRolloutRule",
         "RepairRolloutRule",
-        "RepairMode",
-        "Retry",
-        "Rollback",
         "AutomationRuleCondition",
         "CreateAutomationRequest",
         "UpdateAutomationRequest",
@@ -224,8 +221,8 @@ class RepairState(proto.Enum):
             The ``repair`` action is in progress.
         REPAIR_STATE_PENDING (5):
             The ``repair`` action is pending.
-        REPAIR_STATE_SKIPPED (6):
-            The ``repair`` action was skipped.
+        REPAIR_STATE_ABORTED (7):
+            The ``repair`` action was aborted.
     """
     REPAIR_STATE_UNSPECIFIED = 0
     REPAIR_STATE_SUCCEEDED = 1
@@ -233,7 +230,7 @@ class RepairState(proto.Enum):
     REPAIR_STATE_FAILED = 3
     REPAIR_STATE_IN_PROGRESS = 4
     REPAIR_STATE_PENDING = 5
-    REPAIR_STATE_SKIPPED = 6
+    REPAIR_STATE_ABORTED = 7
 
 
 class DeliveryPipeline(proto.Message):
@@ -602,7 +599,9 @@ class CanaryDeployment(proto.Message):
         percentages (MutableSequence[int]):
             Required. The percentage based deployments that will occur
             as a part of a ``Rollout``. List is expected in ascending
-            order and each integer n is 0 <= n < 100.
+            order and each integer n is 0 <= n < 100. If the
+            GatewayServiceMesh is configured for Kubernetes, then the
+            range for n is 0 <= n <= 100.
         verify (bool):
             Whether to run verify tests after each
             percentage deployment.
@@ -761,6 +760,11 @@ class KubernetesConfig(proto.Message):
                 deployment. If specified, must be between 15s
                 and 3600s. If unspecified, there is no cutback
                 time.
+            pod_selector_label (str):
+                Optional. The label to use when selecting
+                Pods for the Deployment and Service resources.
+                This label must already be present in both
+                resources.
         """
 
         http_route: str = proto.Field(
@@ -785,6 +789,10 @@ class KubernetesConfig(proto.Message):
             number=5,
             message=duration_pb2.Duration,
         )
+        pod_selector_label: str = proto.Field(
+            proto.STRING,
+            number=6,
+        )
 
     class ServiceNetworking(proto.Message):
         r"""Information about the Kubernetes Service networking
@@ -804,6 +812,10 @@ class KubernetesConfig(proto.Message):
                 of total Pods used for the deployment strategy
                 to the number of Pods the Deployment has on the
                 cluster.
+            pod_selector_label (str):
+                Optional. The label to use when selecting
+                Pods for the Deployment resource. This label
+                must already be present in the Deployment.
         """
 
         service: str = proto.Field(
@@ -817,6 +829,10 @@ class KubernetesConfig(proto.Message):
         disable_pod_overprovisioning: bool = proto.Field(
             proto.BOOL,
             number=3,
+        )
+        pod_selector_label: str = proto.Field(
+            proto.STRING,
+            number=4,
         )
 
     gateway_service_mesh: GatewayServiceMesh = proto.Field(
@@ -1130,7 +1146,7 @@ class CreateDeliveryPipelineRequest(proto.Message):
     Attributes:
         parent (str):
             Required. The parent collection in which the
-            ``DeliveryPipeline`` should be created. Format should be
+            ``DeliveryPipeline`` must be created. The format is
             ``projects/{project_id}/locations/{location_name}``.
         delivery_pipeline_id (str):
             Required. ID of the ``DeliveryPipeline``.
@@ -1191,11 +1207,11 @@ class UpdateDeliveryPipelineRequest(proto.Message):
     Attributes:
         update_mask (google.protobuf.field_mask_pb2.FieldMask):
             Required. Field mask is used to specify the fields to be
-            overwritten in the ``DeliveryPipeline`` resource by the
-            update. The fields specified in the update_mask are relative
-            to the resource, not the full request. A field will be
-            overwritten if it's in the mask. If the user doesn't provide
-            a mask then all fields are overwritten.
+            overwritten by the update in the ``DeliveryPipeline``
+            resource. The fields specified in the update_mask are
+            relative to the resource, not the full request. A field will
+            be overwritten if it's in the mask. If the user doesn't
+            provide a mask then all fields are overwritten.
         delivery_pipeline (google.cloud.deploy_v1.types.DeliveryPipeline):
             Required. The ``DeliveryPipeline`` to update.
         request_id (str):
@@ -1258,7 +1274,7 @@ class DeleteDeliveryPipelineRequest(proto.Message):
     Attributes:
         name (str):
             Required. The name of the ``DeliveryPipeline`` to delete.
-            Format should be
+            The format is
             ``projects/{project_id}/locations/{location_name}/deliveryPipelines/{pipeline_name}``.
         request_id (str):
             Optional. A request ID to identify requests.
@@ -1353,7 +1369,7 @@ class RollbackTargetRequest(proto.Message):
     Attributes:
         name (str):
             Required. The ``DeliveryPipeline`` for which the rollback
-            ``Rollout`` should be created. Format should be
+            ``Rollout`` must be created. The format is
             ``projects/{project_id}/locations/{location_name}/deliveryPipelines/{pipeline_name}``.
         target_id (str):
             Required. ID of the ``Target`` that is being rolled back.
@@ -1802,6 +1818,10 @@ class GkeCluster(proto.Message):
 
             Only specify this option when ``cluster`` is a `private GKE
             cluster <https://cloud.google.com/kubernetes-engine/docs/concepts/private-cluster-concept>`__.
+        proxy_url (str):
+            Optional. If set, used to configure a
+            `proxy <https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#proxy>`__
+            to the Kubernetes server.
     """
 
     cluster: str = proto.Field(
@@ -1811,6 +1831,10 @@ class GkeCluster(proto.Message):
     internal_ip: bool = proto.Field(
         proto.BOOL,
         number=2,
+    )
+    proxy_url: str = proto.Field(
+        proto.STRING,
+        number=3,
     )
 
 
@@ -1979,8 +2003,8 @@ class CreateTargetRequest(proto.Message):
 
     Attributes:
         parent (str):
-            Required. The parent collection in which the ``Target``
-            should be created. Format should be
+            Required. The parent collection in which the ``Target`` must
+            be created. The format is
             ``projects/{project_id}/locations/{location_name}``.
         target_id (str):
             Required. ID of the ``Target``.
@@ -2041,11 +2065,11 @@ class UpdateTargetRequest(proto.Message):
     Attributes:
         update_mask (google.protobuf.field_mask_pb2.FieldMask):
             Required. Field mask is used to specify the fields to be
-            overwritten in the Target resource by the update. The fields
-            specified in the update_mask are relative to the resource,
-            not the full request. A field will be overwritten if it's in
-            the mask. If the user doesn't provide a mask then all fields
-            are overwritten.
+            overwritten by the update in the ``Target`` resource. The
+            fields specified in the update_mask are relative to the
+            resource, not the full request. A field will be overwritten
+            if it's in the mask. If the user doesn't provide a mask then
+            all fields are overwritten.
         target (google.cloud.deploy_v1.types.Target):
             Required. The ``Target`` to update.
         request_id (str):
@@ -2106,8 +2130,8 @@ class DeleteTargetRequest(proto.Message):
 
     Attributes:
         name (str):
-            Required. The name of the ``Target`` to delete. Format
-            should be
+            Required. The name of the ``Target`` to delete. The format
+            is
             ``projects/{project_id}/locations/{location_name}/targets/{target_name}``.
         request_id (str):
             Optional. A request ID to identify requests.
@@ -2374,7 +2398,7 @@ class SkaffoldModules(proto.Message):
         Attributes:
             source (str):
                 Required. Cloud Storage source paths to copy recursively.
-                For example, providing "gs://my-bucket/dir/configs/*" will
+                For example, providing `gs://my-bucket/dir/configs/*` will
                 result in Skaffold copying all files within the
                 "dir/configs" directory in the bucket "my-bucket".
             path (str):
@@ -2551,7 +2575,7 @@ class CreateCustomTargetTypeRequest(proto.Message):
     Attributes:
         parent (str):
             Required. The parent collection in which the
-            ``CustomTargetType`` should be created. Format should be
+            ``CustomTargetType`` must be created. The format is
             ``projects/{project_id}/locations/{location_name}``.
         custom_target_type_id (str):
             Required. ID of the ``CustomTargetType``.
@@ -2612,11 +2636,11 @@ class UpdateCustomTargetTypeRequest(proto.Message):
     Attributes:
         update_mask (google.protobuf.field_mask_pb2.FieldMask):
             Required. Field mask is used to specify the fields to be
-            overwritten in the ``CustomTargetType`` resource by the
-            update. The fields specified in the update_mask are relative
-            to the resource, not the full request. A field will be
-            overwritten if it's in the mask. If the user doesn't provide
-            a mask then all fields are overwritten.
+            overwritten by the update in the ``CustomTargetType``
+            resource. The fields specified in the update_mask are
+            relative to the resource, not the full request. A field will
+            be overwritten if it's in the mask. If the user doesn't
+            provide a mask then all fields are overwritten.
         custom_target_type (google.cloud.deploy_v1.types.CustomTargetType):
             Required. The ``CustomTargetType`` to update.
         request_id (str):
@@ -2745,9 +2769,8 @@ class TargetAttribute(proto.Message):
             ID of the ``Target``. The value of this field could be one
             of the following:
 
-            -  The last segment of a target name. It only needs the ID
-               to determine which target is being referred to
-            -  "*", all targets in a location.
+            -  The last segment of a target name
+            -  "*", all targets in a location
         labels (MutableMapping[str, str]):
             Target labels.
     """
@@ -3450,8 +3473,8 @@ class CreateReleaseRequest(proto.Message):
 
     Attributes:
         parent (str):
-            Required. The parent collection in which the ``Release``
-            should be created. Format should be
+            Required. The parent collection in which the ``Release`` is
+            created. The format is
             ``projects/{project_id}/locations/{location_name}/deliveryPipelines/{pipeline_name}``.
         release_id (str):
             Required. ID of the ``Release``.
@@ -3928,13 +3951,13 @@ class AutomationRolloutMetadata(proto.Message):
 
     Attributes:
         promote_automation_run (str):
-            Output only. The ID of the AutomationRun
+            Output only. The name of the AutomationRun
             initiated by a promote release rule.
         advance_automation_runs (MutableSequence[str]):
-            Output only. The IDs of the AutomationRuns
+            Output only. The names of the AutomationRuns
             initiated by an advance rollout rule.
         repair_automation_runs (MutableSequence[str]):
-            Output only. The IDs of the AutomationRuns
+            Output only. The names of the AutomationRuns
             initiated by a repair rollout rule.
     """
 
@@ -4404,7 +4427,7 @@ class CreateRolloutRequest(proto.Message):
     Attributes:
         parent (str):
             Required. The parent collection in which the ``Rollout``
-            should be created. Format should be
+            must be created. The format is
             ``projects/{project_id}/locations/{location_name}/deliveryPipelines/{pipeline_name}/releases/{release_name}``.
         rollout_id (str):
             Required. ID of the ``Rollout``.
@@ -5585,8 +5608,8 @@ class AutomationRule(proto.Message):
 
 
 class PromoteReleaseRule(proto.Message):
-    r"""``PromoteRelease`` rule will automatically promote a release from
-    the current target to a specified target.
+    r"""The ``PromoteRelease`` rule will automatically promote a release
+    from the current target to a specified target.
 
     Attributes:
         id (str):
@@ -5602,10 +5625,8 @@ class PromoteReleaseRule(proto.Message):
             next stage in the promotion flow. The value of this field
             could be one of the following:
 
-            -  The last segment of a target name. It only needs the ID
-               to determine if the target is one of the stages in the
-               promotion sequence defined in the pipeline.
-            -  "@next", the next target in the promotion sequence.
+            -  The last segment of a target name
+            -  "@next", the next target in the promotion sequence
         condition (google.cloud.deploy_v1.types.AutomationRuleCondition):
             Output only. Information around the state of
             the Automation rule.
@@ -5692,15 +5713,6 @@ class RepairRolloutRule(proto.Message):
             Required. ID of the rule. This id must be unique in the
             ``Automation`` resource to which this rule belongs. The
             format is ``[a-z]([a-z0-9-]{0,61}[a-z0-9])?``.
-        source_phases (MutableSequence[str]):
-            Optional. Phases within which jobs are subject to automatic
-            repair actions on failure. Proceeds only after phase name
-            matched any one in the list, or for all phases if
-            unspecified. This value must consist of lower-case letters,
-            numbers, and hyphens, start with a letter and end with a
-            letter or a number, and have a max length of 63 characters.
-            In other words, it must match the following regex:
-            ``^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$``.
         jobs (MutableSequence[str]):
             Optional. Jobs to repair. Proceeds only after job name
             matched any one in the list, or for all jobs if unspecified
@@ -5710,9 +5722,6 @@ class RepairRolloutRule(proto.Message):
             with a letter and end with a letter or a number, and have a
             max length of 63 characters. In other words, it must match
             the following regex: ``^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$``.
-        repair_modes (MutableSequence[google.cloud.deploy_v1.types.RepairMode]):
-            Required. Defines the types of automatic
-            repair actions for failed jobs.
         condition (google.cloud.deploy_v1.types.AutomationRuleCondition):
             Output only. Information around the state of
             the 'Automation' rule.
@@ -5722,107 +5731,14 @@ class RepairRolloutRule(proto.Message):
         proto.STRING,
         number=1,
     )
-    source_phases: MutableSequence[str] = proto.RepeatedField(
-        proto.STRING,
-        number=2,
-    )
     jobs: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
         number=3,
-    )
-    repair_modes: MutableSequence["RepairMode"] = proto.RepeatedField(
-        proto.MESSAGE,
-        number=4,
-        message="RepairMode",
     )
     condition: "AutomationRuleCondition" = proto.Field(
         proto.MESSAGE,
         number=6,
         message="AutomationRuleCondition",
-    )
-
-
-class RepairMode(proto.Message):
-    r"""Configuration of the repair action.
-
-    This message has `oneof`_ fields (mutually exclusive fields).
-    For each oneof, at most one member field can be set at the same time.
-    Setting any member of the oneof automatically clears all other
-    members.
-
-    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
-
-    Attributes:
-        retry (google.cloud.deploy_v1.types.Retry):
-            Optional. Retries a failed job.
-
-            This field is a member of `oneof`_ ``mode``.
-        rollback (google.cloud.deploy_v1.types.Rollback):
-            Optional. Rolls back a ``Rollout``.
-
-            This field is a member of `oneof`_ ``mode``.
-    """
-
-    retry: "Retry" = proto.Field(
-        proto.MESSAGE,
-        number=1,
-        oneof="mode",
-        message="Retry",
-    )
-    rollback: "Rollback" = proto.Field(
-        proto.MESSAGE,
-        number=2,
-        oneof="mode",
-        message="Rollback",
-    )
-
-
-class Retry(proto.Message):
-    r"""Retries the failed job.
-
-    Attributes:
-        attempts (int):
-            Required. Total number of retries. Retry is
-            skipped if set to 0; The minimum value is 1, and
-            the maximum value is 10.
-        wait (google.protobuf.duration_pb2.Duration):
-            Optional. How long to wait for the first
-            retry. Default is 0, and the maximum value is
-            14d.
-        backoff_mode (google.cloud.deploy_v1.types.BackoffMode):
-            Optional. The pattern of how wait time will be increased.
-            Default is linear. Backoff mode will be ignored if ``wait``
-            is 0.
-    """
-
-    attempts: int = proto.Field(
-        proto.INT64,
-        number=1,
-    )
-    wait: duration_pb2.Duration = proto.Field(
-        proto.MESSAGE,
-        number=2,
-        message=duration_pb2.Duration,
-    )
-    backoff_mode: "BackoffMode" = proto.Field(
-        proto.ENUM,
-        number=3,
-        enum="BackoffMode",
-    )
-
-
-class Rollback(proto.Message):
-    r"""Rolls back a ``Rollout``.
-
-    Attributes:
-        destination_phase (str):
-            Optional. The starting phase ID for the ``Rollout``. If
-            unspecified, the ``Rollout`` will start in the stable phase.
-    """
-
-    destination_phase: str = proto.Field(
-        proto.STRING,
-        number=1,
     )
 
 
@@ -5849,7 +5765,7 @@ class CreateAutomationRequest(proto.Message):
     Attributes:
         parent (str):
             Required. The parent collection in which the ``Automation``
-            should be created. Format should be
+            must be created. The format is
             ``projects/{project_id}/locations/{location_name}/deliveryPipelines/{pipeline_name}``.
         automation_id (str):
             Required. ID of the ``Automation``.
@@ -5910,7 +5826,7 @@ class UpdateAutomationRequest(proto.Message):
     Attributes:
         update_mask (google.protobuf.field_mask_pb2.FieldMask):
             Required. Field mask is used to specify the fields to be
-            overwritten in the ``Automation`` resource by the update.
+            overwritten by the update in the ``Automation`` resource.
             The fields specified in the update_mask are relative to the
             resource, not the full request. A field will be overwritten
             if it's in the mask. If the user doesn't provide a mask then
@@ -5976,8 +5892,8 @@ class DeleteAutomationRequest(proto.Message):
 
     Attributes:
         name (str):
-            Required. The name of the ``Automation`` to delete. Format
-            should be
+            Required. The name of the ``Automation`` to delete. The
+            format is
             ``projects/{project_id}/locations/{location_name}/deliveryPipelines/{pipeline_name}/automations/{automation_name}``.
         request_id (str):
             Optional. A request ID to identify requests.
@@ -6225,6 +6141,8 @@ class AutomationRun(proto.Message):
                 The ``AutomationRun`` is in progress.
             PENDING (5):
                 The ``AutomationRun`` is pending.
+            ABORTED (6):
+                The ``AutomationRun`` was aborted.
         """
         STATE_UNSPECIFIED = 0
         SUCCEEDED = 1
@@ -6232,6 +6150,7 @@ class AutomationRun(proto.Message):
         FAILED = 3
         IN_PROGRESS = 4
         PENDING = 5
+        ABORTED = 6
 
     name: str = proto.Field(
         proto.STRING,
@@ -6397,33 +6316,40 @@ class RepairRolloutOperation(proto.Message):
         rollout (str):
             Output only. The name of the rollout that initiates the
             ``AutomationRun``.
-        current_repair_mode_index (int):
-            Output only. The index of the current repair
-            action in the repair sequence.
         repair_phases (MutableSequence[google.cloud.deploy_v1.types.RepairPhase]):
             Output only. Records of the repair attempts.
             Each repair phase may have multiple retry
             attempts or single rollback attempt.
+        phase_id (str):
+            Output only. The phase ID of the phase that
+            includes the job being repaired.
+        job_id (str):
+            Output only. The job ID for the Job to
+            repair.
     """
 
     rollout: str = proto.Field(
         proto.STRING,
         number=1,
     )
-    current_repair_mode_index: int = proto.Field(
-        proto.INT64,
-        number=2,
-    )
     repair_phases: MutableSequence["RepairPhase"] = proto.RepeatedField(
         proto.MESSAGE,
         number=3,
         message="RepairPhase",
     )
+    phase_id: str = proto.Field(
+        proto.STRING,
+        number=4,
+    )
+    job_id: str = proto.Field(
+        proto.STRING,
+        number=5,
+    )
 
 
 class RepairPhase(proto.Message):
     r"""RepairPhase tracks the repair attempts that have been made for each
-    ``RepairMode`` specified in the ``Automation`` resource.
+    ``RepairPhaseConfig`` specified in the ``Automation`` resource.
 
     This message has `oneof`_ fields (mutually exclusive fields).
     For each oneof, at most one member field can be set at the same time.
@@ -6470,11 +6396,6 @@ class RetryPhase(proto.Message):
         backoff_mode (google.cloud.deploy_v1.types.BackoffMode):
             Output only. The pattern of how the wait time
             of the retry attempt is calculated.
-        phase_id (str):
-            Output only. The phase ID of the phase that
-            includes the job being retried.
-        job_id (str):
-            Output only. The job ID for the Job to retry.
         attempts (MutableSequence[google.cloud.deploy_v1.types.RetryAttempt]):
             Output only. Detail of a retry action.
     """
@@ -6487,14 +6408,6 @@ class RetryPhase(proto.Message):
         proto.ENUM,
         number=2,
         enum="BackoffMode",
-    )
-    phase_id: str = proto.Field(
-        proto.STRING,
-        number=3,
-    )
-    job_id: str = proto.Field(
-        proto.STRING,
-        number=4,
     )
     attempts: MutableSequence["RetryAttempt"] = proto.RepeatedField(
         proto.MESSAGE,

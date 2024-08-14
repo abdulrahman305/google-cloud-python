@@ -38,6 +38,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1137,6 +1138,7 @@ def test_get_model(request_type, transport: str = "grpc"):
             output_token_limit=1967,
             supported_generation_methods=["supported_generation_methods_value"],
             temperature=0.1198,
+            max_temperature=0.16190000000000002,
             top_p=0.546,
             top_k=541,
         )
@@ -1161,6 +1163,7 @@ def test_get_model(request_type, transport: str = "grpc"):
         "supported_generation_methods_value"
     ]
     assert math.isclose(response.temperature, 0.1198, rel_tol=1e-6)
+    assert math.isclose(response.max_temperature, 0.16190000000000002, rel_tol=1e-6)
     assert math.isclose(response.top_p, 0.546, rel_tol=1e-6)
     assert response.top_k == 541
 
@@ -1270,6 +1273,7 @@ async def test_get_model_empty_call_async():
                 output_token_limit=1967,
                 supported_generation_methods=["supported_generation_methods_value"],
                 temperature=0.1198,
+                max_temperature=0.16190000000000002,
                 top_p=0.546,
                 top_k=541,
             )
@@ -1301,12 +1305,7 @@ async def test_get_model_async_use_cached_wrapped_rpc(transport: str = "grpc_asy
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_model
         ] = mock_object
@@ -1351,6 +1350,7 @@ async def test_get_model_async(
                 output_token_limit=1967,
                 supported_generation_methods=["supported_generation_methods_value"],
                 temperature=0.1198,
+                max_temperature=0.16190000000000002,
                 top_p=0.546,
                 top_k=541,
             )
@@ -1376,6 +1376,7 @@ async def test_get_model_async(
         "supported_generation_methods_value"
     ]
     assert math.isclose(response.temperature, 0.1198, rel_tol=1e-6)
+    assert math.isclose(response.max_temperature, 0.16190000000000002, rel_tol=1e-6)
     assert math.isclose(response.top_p, 0.546, rel_tol=1e-6)
     assert response.top_k == 541
 
@@ -1688,12 +1689,7 @@ async def test_list_models_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_models
         ] = mock_object
@@ -1880,9 +1876,13 @@ def test_list_models_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
-        pager = client.list_models(request={})
+        retry = retries.Retry()
+        timeout = 5
+        pager = client.list_models(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -2212,12 +2212,7 @@ async def test_get_tuned_model_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_tuned_model
         ] = mock_object
@@ -2605,12 +2600,7 @@ async def test_list_tuned_models_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_tuned_models
         ] = mock_object
@@ -2805,9 +2795,13 @@ def test_list_tuned_models_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
-        pager = client.list_tuned_models(request={})
+        retry = retries.Retry()
+        timeout = 5
+        pager = client.list_tuned_models(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -3135,12 +3129,7 @@ async def test_create_tuned_model_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_tuned_model
         ] = mock_object
@@ -3511,12 +3500,7 @@ async def test_update_tuned_model_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_tuned_model
         ] = mock_object
@@ -3941,12 +3925,7 @@ async def test_delete_tuned_model_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_tuned_model
         ] = mock_object
@@ -4177,6 +4156,7 @@ def test_get_model_rest(request_type):
             output_token_limit=1967,
             supported_generation_methods=["supported_generation_methods_value"],
             temperature=0.1198,
+            max_temperature=0.16190000000000002,
             top_p=0.546,
             top_k=541,
         )
@@ -4205,6 +4185,7 @@ def test_get_model_rest(request_type):
         "supported_generation_methods_value"
     ]
     assert math.isclose(response.temperature, 0.1198, rel_tol=1e-6)
+    assert math.isclose(response.max_temperature, 0.16190000000000002, rel_tol=1e-6)
     assert math.isclose(response.top_p, 0.546, rel_tol=1e-6)
     assert response.top_k == 541
 

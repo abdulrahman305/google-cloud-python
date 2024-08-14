@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.6.8](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.7...google-ai-generativelanguage-v0.6.8) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([c6eeae0](https://github.com/googleapis/google-cloud-python/commit/c6eeae00de802d98badd3de879ce5e870ba60a3a))
+
+## [0.6.7](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.6...google-ai-generativelanguage-v0.6.7) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12863](https://github.com/googleapis/google-cloud-python/issues/12863)) ([3e6e423](https://github.com/googleapis/google-cloud-python/commit/3e6e423b86cdace8538f610941aa84c7a6217934))
+
+## [0.6.6](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.5...google-ai-generativelanguage-v0.6.6) (2024-06-26)
+
+
+### Features
+
+* [google-ai-generativelanguage] Add code execution ([#12843](https://github.com/googleapis/google-cloud-python/issues/12843)) ([e4fcb00](https://github.com/googleapis/google-cloud-python/commit/e4fcb0097b4f6debbcf584bd3d35a8281a954cfd))
+
 ## [0.6.5](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.4...google-ai-generativelanguage-v0.6.5) (2024-06-11)
 
 

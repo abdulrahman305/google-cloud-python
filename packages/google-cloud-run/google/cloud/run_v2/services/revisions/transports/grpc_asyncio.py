@@ -171,7 +171,8 @@ class RevisionsGrpcAsyncIOTransport(RevisionsTransport):
 
         if isinstance(channel, aio.Channel):
             # Ignore credentials if a channel was passed.
-            credentials = False
+            credentials = None
+            self._ignore_credentials = True
             # If a channel was explicitly provided, set it.
             self._grpc_channel = channel
             self._ssl_channel_credentials = None
@@ -291,7 +292,8 @@ class RevisionsGrpcAsyncIOTransport(RevisionsTransport):
         r"""Return a callable for the list revisions method over gRPC.
 
         Lists Revisions from a given Service, or from a given
-        location.
+        location.  Results are sorted by creation time,
+        descending.
 
         Returns:
             Callable[[~.ListRevisionsRequest],

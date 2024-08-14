@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.21.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.21.1...google-cloud-recaptcha-enterprise-v1.21.2) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([42c4d04](https://github.com/googleapis/google-cloud-python/commit/42c4d04ee1362ba0ed0f1b6a134ac8e409875b63))
+
+## [1.21.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.21.0...google-cloud-recaptcha-enterprise-v1.21.1) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12869](https://github.com/googleapis/google-cloud-python/issues/12869)) ([e42edbc](https://github.com/googleapis/google-cloud-python/commit/e42edbcf7f4d8ed66b6645c96a01c55fb8cd7666))
+
+## [1.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.20.0...google-cloud-recaptcha-enterprise-v1.21.0) (2024-06-27)
+
+
+### Features
+
+* [google-cloud-recaptcha-enterprise] added SMS Toll Fraud assessment ([#12838](https://github.com/googleapis/google-cloud-python/issues/12838)) ([386499f](https://github.com/googleapis/google-cloud-python/commit/386499fe11525d2646b79f9e41829b2c055f63b2))
+
 ## [1.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-recaptcha-enterprise-v1.19.1...google-cloud-recaptcha-enterprise-v1.20.0) (2024-04-24)
 
 

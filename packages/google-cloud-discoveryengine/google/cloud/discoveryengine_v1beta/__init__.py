@@ -33,6 +33,10 @@ from .services.data_store_service import (
 )
 from .services.document_service import DocumentServiceAsyncClient, DocumentServiceClient
 from .services.engine_service import EngineServiceAsyncClient, EngineServiceClient
+from .services.evaluation_service import (
+    EvaluationServiceAsyncClient,
+    EvaluationServiceClient,
+)
 from .services.grounded_generation_service import (
     GroundedGenerationServiceAsyncClient,
     GroundedGenerationServiceClient,
@@ -42,6 +46,14 @@ from .services.rank_service import RankServiceAsyncClient, RankServiceClient
 from .services.recommendation_service import (
     RecommendationServiceAsyncClient,
     RecommendationServiceClient,
+)
+from .services.sample_query_service import (
+    SampleQueryServiceAsyncClient,
+    SampleQueryServiceClient,
+)
+from .services.sample_query_set_service import (
+    SampleQuerySetServiceAsyncClient,
+    SampleQuerySetServiceClient,
 )
 from .services.schema_service import SchemaServiceAsyncClient, SchemaServiceClient
 from .services.search_service import SearchServiceAsyncClient, SearchServiceClient
@@ -62,6 +74,7 @@ from .services.user_event_service import (
     UserEventServiceClient,
 )
 from .types.answer import Answer
+from .types.chunk import Chunk
 from .types.common import (
     CustomAttribute,
     DoubleList,
@@ -74,7 +87,7 @@ from .types.common import (
     SolutionType,
     UserInfo,
 )
-from .types.completion import SuggestionDenyListEntry
+from .types.completion import CompletionSuggestion, SuggestionDenyListEntry
 from .types.completion_service import CompleteQueryRequest, CompleteQueryResponse
 from .types.control import Condition, Control
 from .types.control_service import (
@@ -112,7 +125,7 @@ from .types.conversational_search_service import (
     UpdateSessionRequest,
 )
 from .types.custom_tuning_model import CustomTuningModel
-from .types.data_store import DataStore
+from .types.data_store import DataStore, LanguageInfo
 from .types.data_store_service import (
     CreateDataStoreMetadata,
     CreateDataStoreRequest,
@@ -149,6 +162,16 @@ from .types.engine_service import (
     TuneEngineResponse,
     UpdateEngineRequest,
 )
+from .types.evaluation import Evaluation, QualityMetrics
+from .types.evaluation_service import (
+    CreateEvaluationMetadata,
+    CreateEvaluationRequest,
+    GetEvaluationRequest,
+    ListEvaluationResultsRequest,
+    ListEvaluationResultsResponse,
+    ListEvaluationsRequest,
+    ListEvaluationsResponse,
+)
 from .types.grounded_generation_service import (
     CheckGroundingRequest,
     CheckGroundingResponse,
@@ -156,6 +179,7 @@ from .types.grounded_generation_service import (
 )
 from .types.grounding import FactChunk, GroundingFact
 from .types.import_config import (
+    AlloyDbSource,
     BigQuerySource,
     BigtableOptions,
     BigtableSource,
@@ -163,10 +187,16 @@ from .types.import_config import (
     FhirStoreSource,
     FirestoreSource,
     GcsSource,
+    ImportCompletionSuggestionsMetadata,
+    ImportCompletionSuggestionsRequest,
+    ImportCompletionSuggestionsResponse,
     ImportDocumentsMetadata,
     ImportDocumentsRequest,
     ImportDocumentsResponse,
     ImportErrorConfig,
+    ImportSampleQueriesMetadata,
+    ImportSampleQueriesRequest,
+    ImportSampleQueriesResponse,
     ImportSuggestionDenyListEntriesMetadata,
     ImportSuggestionDenyListEntriesRequest,
     ImportSuggestionDenyListEntriesResponse,
@@ -178,15 +208,39 @@ from .types.import_config import (
 from .types.project import Project
 from .types.project_service import ProvisionProjectMetadata, ProvisionProjectRequest
 from .types.purge_config import (
+    PurgeCompletionSuggestionsMetadata,
+    PurgeCompletionSuggestionsRequest,
+    PurgeCompletionSuggestionsResponse,
     PurgeDocumentsMetadata,
     PurgeDocumentsRequest,
     PurgeDocumentsResponse,
     PurgeSuggestionDenyListEntriesMetadata,
     PurgeSuggestionDenyListEntriesRequest,
     PurgeSuggestionDenyListEntriesResponse,
+    PurgeUserEventsMetadata,
+    PurgeUserEventsRequest,
+    PurgeUserEventsResponse,
 )
 from .types.rank_service import RankingRecord, RankRequest, RankResponse
 from .types.recommendation_service import RecommendRequest, RecommendResponse
+from .types.sample_query import SampleQuery
+from .types.sample_query_service import (
+    CreateSampleQueryRequest,
+    DeleteSampleQueryRequest,
+    GetSampleQueryRequest,
+    ListSampleQueriesRequest,
+    ListSampleQueriesResponse,
+    UpdateSampleQueryRequest,
+)
+from .types.sample_query_set import SampleQuerySet
+from .types.sample_query_set_service import (
+    CreateSampleQuerySetRequest,
+    DeleteSampleQuerySetRequest,
+    GetSampleQuerySetRequest,
+    ListSampleQuerySetsRequest,
+    ListSampleQuerySetsResponse,
+    UpdateSampleQuerySetRequest,
+)
 from .types.schema import Schema
 from .types.schema_service import (
     CreateSchemaMetadata,
@@ -264,16 +318,20 @@ __all__ = (
     "DataStoreServiceAsyncClient",
     "DocumentServiceAsyncClient",
     "EngineServiceAsyncClient",
+    "EvaluationServiceAsyncClient",
     "GroundedGenerationServiceAsyncClient",
     "ProjectServiceAsyncClient",
     "RankServiceAsyncClient",
     "RecommendationServiceAsyncClient",
+    "SampleQueryServiceAsyncClient",
+    "SampleQuerySetServiceAsyncClient",
     "SchemaServiceAsyncClient",
     "SearchServiceAsyncClient",
     "SearchTuningServiceAsyncClient",
     "ServingConfigServiceAsyncClient",
     "SiteSearchEngineServiceAsyncClient",
     "UserEventServiceAsyncClient",
+    "AlloyDbSource",
     "Answer",
     "AnswerQueryRequest",
     "AnswerQueryResponse",
@@ -289,12 +347,14 @@ __all__ = (
     "CheckGroundingRequest",
     "CheckGroundingResponse",
     "CheckGroundingSpec",
+    "Chunk",
     "CloudSqlSource",
     "CollectUserEventRequest",
     "CompleteQueryRequest",
     "CompleteQueryResponse",
     "CompletionInfo",
     "CompletionServiceClient",
+    "CompletionSuggestion",
     "Condition",
     "Control",
     "ControlServiceClient",
@@ -311,6 +371,10 @@ __all__ = (
     "CreateDocumentRequest",
     "CreateEngineMetadata",
     "CreateEngineRequest",
+    "CreateEvaluationMetadata",
+    "CreateEvaluationRequest",
+    "CreateSampleQueryRequest",
+    "CreateSampleQuerySetRequest",
     "CreateSchemaMetadata",
     "CreateSchemaRequest",
     "CreateSessionRequest",
@@ -327,6 +391,8 @@ __all__ = (
     "DeleteDocumentRequest",
     "DeleteEngineMetadata",
     "DeleteEngineRequest",
+    "DeleteSampleQueryRequest",
+    "DeleteSampleQuerySetRequest",
     "DeleteSchemaMetadata",
     "DeleteSchemaRequest",
     "DeleteSessionRequest",
@@ -346,6 +412,8 @@ __all__ = (
     "EnableAdvancedSiteSearchResponse",
     "Engine",
     "EngineServiceClient",
+    "Evaluation",
+    "EvaluationServiceClient",
     "FactChunk",
     "FetchDomainVerificationStatusRequest",
     "FetchDomainVerificationStatusResponse",
@@ -358,6 +426,9 @@ __all__ = (
     "GetDataStoreRequest",
     "GetDocumentRequest",
     "GetEngineRequest",
+    "GetEvaluationRequest",
+    "GetSampleQueryRequest",
+    "GetSampleQuerySetRequest",
     "GetSchemaRequest",
     "GetServingConfigRequest",
     "GetSessionRequest",
@@ -365,10 +436,16 @@ __all__ = (
     "GetTargetSiteRequest",
     "GroundedGenerationServiceClient",
     "GroundingFact",
+    "ImportCompletionSuggestionsMetadata",
+    "ImportCompletionSuggestionsRequest",
+    "ImportCompletionSuggestionsResponse",
     "ImportDocumentsMetadata",
     "ImportDocumentsRequest",
     "ImportDocumentsResponse",
     "ImportErrorConfig",
+    "ImportSampleQueriesMetadata",
+    "ImportSampleQueriesRequest",
+    "ImportSampleQueriesResponse",
     "ImportSuggestionDenyListEntriesMetadata",
     "ImportSuggestionDenyListEntriesRequest",
     "ImportSuggestionDenyListEntriesResponse",
@@ -377,6 +454,7 @@ __all__ = (
     "ImportUserEventsResponse",
     "IndustryVertical",
     "Interval",
+    "LanguageInfo",
     "ListControlsRequest",
     "ListControlsResponse",
     "ListConversationsRequest",
@@ -389,6 +467,14 @@ __all__ = (
     "ListDocumentsResponse",
     "ListEnginesRequest",
     "ListEnginesResponse",
+    "ListEvaluationResultsRequest",
+    "ListEvaluationResultsResponse",
+    "ListEvaluationsRequest",
+    "ListEvaluationsResponse",
+    "ListSampleQueriesRequest",
+    "ListSampleQueriesResponse",
+    "ListSampleQuerySetsRequest",
+    "ListSampleQuerySetsResponse",
     "ListSchemasRequest",
     "ListSchemasResponse",
     "ListServingConfigsRequest",
@@ -405,12 +491,19 @@ __all__ = (
     "ProjectServiceClient",
     "ProvisionProjectMetadata",
     "ProvisionProjectRequest",
+    "PurgeCompletionSuggestionsMetadata",
+    "PurgeCompletionSuggestionsRequest",
+    "PurgeCompletionSuggestionsResponse",
     "PurgeDocumentsMetadata",
     "PurgeDocumentsRequest",
     "PurgeDocumentsResponse",
     "PurgeSuggestionDenyListEntriesMetadata",
     "PurgeSuggestionDenyListEntriesRequest",
     "PurgeSuggestionDenyListEntriesResponse",
+    "PurgeUserEventsMetadata",
+    "PurgeUserEventsRequest",
+    "PurgeUserEventsResponse",
+    "QualityMetrics",
     "Query",
     "RankRequest",
     "RankResponse",
@@ -424,6 +517,10 @@ __all__ = (
     "RecrawlUrisResponse",
     "Reply",
     "ResumeEngineRequest",
+    "SampleQuery",
+    "SampleQueryServiceClient",
+    "SampleQuerySet",
+    "SampleQuerySetServiceClient",
     "Schema",
     "SchemaServiceClient",
     "SearchAddOn",
@@ -457,6 +554,8 @@ __all__ = (
     "UpdateDataStoreRequest",
     "UpdateDocumentRequest",
     "UpdateEngineRequest",
+    "UpdateSampleQueryRequest",
+    "UpdateSampleQuerySetRequest",
     "UpdateSchemaMetadata",
     "UpdateSchemaRequest",
     "UpdateServingConfigRequest",

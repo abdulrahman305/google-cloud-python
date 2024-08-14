@@ -4,6 +4,58 @@
 
 [1]: https://pypi.org/project/google-cloud-container/#history
 
+## [2.50.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-container-v2.49.0...google-cloud-container-v2.50.0) (2024-07-30)
+
+
+### Features
+
+* [google-cloud-container] A new field ray_operator_config is added to message .google.container.v1beta1.AddonsConfig ([1cdd6d3](https://github.com/googleapis/google-cloud-python/commit/1cdd6d3d355db24fe217afbc04f3dae2b854efd9))
+* [google-cloud-container] support for Ray Clusters ([1cdd6d3](https://github.com/googleapis/google-cloud-python/commit/1cdd6d3d355db24fe217afbc04f3dae2b854efd9))
+* A new message `RayClusterLoggingConfig` is added ([1cdd6d3](https://github.com/googleapis/google-cloud-python/commit/1cdd6d3d355db24fe217afbc04f3dae2b854efd9))
+* A new message `RayClusterMonitoringConfig` is added ([1cdd6d3](https://github.com/googleapis/google-cloud-python/commit/1cdd6d3d355db24fe217afbc04f3dae2b854efd9))
+* A new message `RayOperatorConfig` is added ([1cdd6d3](https://github.com/googleapis/google-cloud-python/commit/1cdd6d3d355db24fe217afbc04f3dae2b854efd9))
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([a6f7356](https://github.com/googleapis/google-cloud-python/commit/a6f7356f1549721f9fab83d4dcfa226cec1965d0))
+
+
+### Documentation
+
+* [google-cloud-container] minor updates to reference documentation ([#12919](https://github.com/googleapis/google-cloud-python/issues/12919)) ([732c303](https://github.com/googleapis/google-cloud-python/commit/732c303108a453b838e7f3c0fe0450ddf48eb2df))
+* A comment for field `max_pods_per_node` in message `.google.container.v1beta1.AdditionalPodNetworkConfig` is changed ([1cdd6d3](https://github.com/googleapis/google-cloud-python/commit/1cdd6d3d355db24fe217afbc04f3dae2b854efd9))
+* A comment for field `secondary_pod_range` in message `.google.container.v1beta1.AdditionalPodNetworkConfig` is changed ([1cdd6d3](https://github.com/googleapis/google-cloud-python/commit/1cdd6d3d355db24fe217afbc04f3dae2b854efd9))
+* A comment for field `subnetwork` in message `.google.container.v1beta1.AdditionalPodNetworkConfig` is changed ([1cdd6d3](https://github.com/googleapis/google-cloud-python/commit/1cdd6d3d355db24fe217afbc04f3dae2b854efd9))
+* trivial updates ([1cdd6d3](https://github.com/googleapis/google-cloud-python/commit/1cdd6d3d355db24fe217afbc04f3dae2b854efd9))
+
+## [2.49.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-container-v2.48.0...google-cloud-container-v2.49.0) (2024-07-11)
+
+
+### Features
+
+* add DCGM enum in monitoring config ([c321484](https://github.com/googleapis/google-cloud-python/commit/c321484b7eeccf02fd9ca12f982edbf3bac670a2))
+
+
+### Bug Fixes
+
+* Deprecate "EXPERIMENTAL" option for Gateway API ([c321484](https://github.com/googleapis/google-cloud-python/commit/c321484b7eeccf02fd9ca12f982edbf3bac670a2))
+
+## [2.48.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-container-v2.47.1...google-cloud-container-v2.48.0) (2024-07-10)
+
+
+### Features
+
+* [google-cloud-container] add DCGM enum in monitoring config ([#12892](https://github.com/googleapis/google-cloud-python/issues/12892)) ([ea0a4c9](https://github.com/googleapis/google-cloud-python/commit/ea0a4c983772a493995964805607c7dbed96b9a9))
+
+## [2.47.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-container-v2.47.0...google-cloud-container-v2.47.1) (2024-07-08)
+
+
+### Bug Fixes
+
+* [google-cloud-container] Deprecate "EXPERIMENTAL" option for Gateway API (this value has never been supported) ([#12856](https://github.com/googleapis/google-cloud-python/issues/12856)) ([6bbe99f](https://github.com/googleapis/google-cloud-python/commit/6bbe99f04005b7bd119023941b9a9d6788c04111))
+* Allow Protobuf 5.x ([#12865](https://github.com/googleapis/google-cloud-python/issues/12865)) ([7f9dedb](https://github.com/googleapis/google-cloud-python/commit/7f9dedb3abc7636cbcd97e21ac857844b885b599))
+
 ## [2.47.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-container-v2.46.0...google-cloud-container-v2.47.0) (2024-06-10)
 
 

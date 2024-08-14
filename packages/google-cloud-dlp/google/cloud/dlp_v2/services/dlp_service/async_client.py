@@ -96,6 +96,12 @@ class DlpServiceAsyncClient:
     parse_dlp_content_path = staticmethod(DlpServiceClient.parse_dlp_content_path)
     dlp_job_path = staticmethod(DlpServiceClient.dlp_job_path)
     parse_dlp_job_path = staticmethod(DlpServiceClient.parse_dlp_job_path)
+    file_store_data_profile_path = staticmethod(
+        DlpServiceClient.file_store_data_profile_path
+    )
+    parse_file_store_data_profile_path = staticmethod(
+        DlpServiceClient.parse_file_store_data_profile_path
+    )
     finding_path = staticmethod(DlpServiceClient.finding_path)
     parse_finding_path = staticmethod(DlpServiceClient.parse_finding_path)
     inspect_template_path = staticmethod(DlpServiceClient.inspect_template_path)
@@ -709,7 +715,7 @@ class DlpServiceAsyncClient:
 
                 ::
 
-                    locations/<var>LOCATION_ID</var>
+                    `locations/{location_id}`
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -821,13 +827,13 @@ class DlpServiceAsyncClient:
                 location <https://cloud.google.com/sensitive-data-protection/docs/specifying-location>`__:
 
                 -  Projects scope, location specified:
-                   ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                   ``projects/{project_id}/locations/{location_id}``
                 -  Projects scope, no location specified (defaults to
-                   global): ``projects/``\ PROJECT_ID
+                   global): ``projects/{project_id}``
                 -  Organizations scope, location specified:
-                   ``organizations/``\ ORG_ID\ ``/locations/``\ LOCATION_ID
+                   ``organizations/{org_id}/locations/{location_id}``
                 -  Organizations scope, no location specified (defaults
-                   to global): ``organizations/``\ ORG_ID
+                   to global): ``organizations/{org_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -1217,13 +1223,13 @@ class DlpServiceAsyncClient:
                 location <https://cloud.google.com/sensitive-data-protection/docs/specifying-location>`__:
 
                 -  Projects scope, location specified:
-                   ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                   ``projects/{project_id}/locations/{location_id}``
                 -  Projects scope, no location specified (defaults to
-                   global): ``projects/``\ PROJECT_ID
+                   global): ``projects/{project_id}``
                 -  Organizations scope, location specified:
-                   ``organizations/``\ ORG_ID\ ``/locations/``\ LOCATION_ID
+                   ``organizations/{org_id}/locations/{location_id}``
                 -  Organizations scope, no location specified (defaults
-                   to global): ``organizations/``\ ORG_ID
+                   to global): ``organizations/{org_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -1301,6 +1307,8 @@ class DlpServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -1461,13 +1469,13 @@ class DlpServiceAsyncClient:
                 location <https://cloud.google.com/sensitive-data-protection/docs/specifying-location>`__:
 
                 -  Projects scope, location specified:
-                   ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                   ``projects/{project_id}/locations/{location_id}``
                 -  Projects scope, no location specified (defaults to
-                   global): ``projects/``\ PROJECT_ID
+                   global): ``projects/{project_id}``
                 -  Organizations scope, location specified:
-                   ``organizations/``\ ORG_ID\ ``/locations/``\ LOCATION_ID
+                   ``organizations/{org_id}/locations/{location_id}``
                 -  Organizations scope, no location specified (defaults
-                   to global): ``organizations/``\ ORG_ID
+                   to global): ``organizations/{org_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -1851,13 +1859,13 @@ class DlpServiceAsyncClient:
                 location <https://cloud.google.com/sensitive-data-protection/docs/specifying-location>`__:
 
                 -  Projects scope, location specified:
-                   ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                   ``projects/{project_id}/locations/{location_id}``
                 -  Projects scope, no location specified (defaults to
-                   global): ``projects/``\ PROJECT_ID
+                   global): ``projects/{project_id}``
                 -  Organizations scope, location specified:
-                   ``organizations/``\ ORG_ID\ ``/locations/``\ LOCATION_ID
+                   ``organizations/{org_id}/locations/{location_id}``
                 -  Organizations scope, no location specified (defaults
-                   to global): ``organizations/``\ ORG_ID
+                   to global): ``organizations/{org_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -1935,6 +1943,8 @@ class DlpServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -2097,9 +2107,9 @@ class DlpServiceAsyncClient:
                 location <https://cloud.google.com/sensitive-data-protection/docs/specifying-location>`__:
 
                 -  Projects scope, location specified:
-                   ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                   ``projects/{project_id}/locations/{location_id}``
                 -  Projects scope, no location specified (defaults to
-                   global): ``projects/``\ PROJECT_ID
+                   global): ``projects/{project_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -2582,9 +2592,9 @@ class DlpServiceAsyncClient:
                 location <https://cloud.google.com/sensitive-data-protection/docs/specifying-location>`__:
 
                 -  Projects scope, location specified:
-                   ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                   ``projects/{project_id}/locations/{location_id}``
                 -  Projects scope, no location specified (defaults to
-                   global): ``projects/``\ PROJECT_ID
+                   global): ``projects/{project_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -2662,6 +2672,8 @@ class DlpServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -2901,8 +2913,13 @@ class DlpServiceAsyncClient:
             parent (:class:`str`):
                 Required. Parent resource name.
 
-                The format of this value is as follows:
-                ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                The format of this value varies depending on the scope
+                of the request (project or organization):
+
+                -  Projects scope:
+                   ``projects/{project_id}/locations/{location_id}``
+                -  Organizations scope:
+                   ``organizations/{org_id}/locations/{location_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -3280,7 +3297,7 @@ class DlpServiceAsyncClient:
                 Required. Parent resource name.
 
                 The format of this value is as follows:
-                ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                ``projects/{project_id}/locations/{location_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -3358,6 +3375,8 @@ class DlpServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -3523,9 +3542,9 @@ class DlpServiceAsyncClient:
                 location <https://cloud.google.com/sensitive-data-protection/docs/specifying-location>`__:
 
                 -  Projects scope, location specified:
-                   ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                   ``projects/{project_id}/locations/{location_id}``
                 -  Projects scope, no location specified (defaults to
-                   global): ``projects/``\ PROJECT_ID
+                   global): ``projects/{project_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -3671,9 +3690,9 @@ class DlpServiceAsyncClient:
                 location <https://cloud.google.com/sensitive-data-protection/docs/specifying-location>`__:
 
                 -  Projects scope, location specified:
-                   ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                   ``projects/{project_id}/locations/{location_id}``
                 -  Projects scope, no location specified (defaults to
-                   global): ``projects/``\ PROJECT_ID
+                   global): ``projects/{project_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -3751,6 +3770,8 @@ class DlpServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -4101,13 +4122,13 @@ class DlpServiceAsyncClient:
                 location <https://cloud.google.com/sensitive-data-protection/docs/specifying-location>`__:
 
                 -  Projects scope, location specified:
-                   ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                   ``projects/{project_id}/locations/{location_id}``
                 -  Projects scope, no location specified (defaults to
-                   global): ``projects/``\ PROJECT_ID
+                   global): ``projects/{project_id}``
                 -  Organizations scope, location specified:
-                   ``organizations/``\ ORG_ID\ ``/locations/``\ LOCATION_ID
+                   ``organizations/{org_id}/locations/{location_id}``
                 -  Organizations scope, no location specified (defaults
-                   to global): ``organizations/``\ ORG_ID
+                   to global): ``organizations/{org_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -4490,9 +4511,9 @@ class DlpServiceAsyncClient:
                 location <https://cloud.google.com/sensitive-data-protection/docs/specifying-location>`__:
 
                 -  Projects scope, location specified:
-                   ``projects/``\ PROJECT_ID\ ``/locations/``\ LOCATION_ID
+                   ``projects/{project_id}/locations/{location_id}``
                 -  Projects scope, no location specified (defaults to
-                   global): ``projects/``\ PROJECT_ID
+                   global): ``projects/{project_id}``
 
                 The following example ``parent`` string specifies a
                 parent project with the identifier ``example-project``,
@@ -4570,6 +4591,8 @@ class DlpServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -4787,6 +4810,8 @@ class DlpServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -4908,6 +4933,8 @@ class DlpServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -5029,6 +5056,8 @@ class DlpServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -5141,6 +5170,334 @@ class DlpServiceAsyncClient:
 
         # Done; return the response.
         return response
+
+    async def list_file_store_data_profiles(
+        self,
+        request: Optional[Union[dlp.ListFileStoreDataProfilesRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, str]] = (),
+    ) -> pagers.ListFileStoreDataProfilesAsyncPager:
+        r"""Lists file store data profiles for an organization.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import dlp_v2
+
+            async def sample_list_file_store_data_profiles():
+                # Create a client
+                client = dlp_v2.DlpServiceAsyncClient()
+
+                # Initialize request argument(s)
+                request = dlp_v2.ListFileStoreDataProfilesRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_file_store_data_profiles(request=request)
+
+                # Handle the response
+                async for response in page_result:
+                    print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.dlp_v2.types.ListFileStoreDataProfilesRequest, dict]]):
+                The request object. Request to list the file store
+                profiles generated for a given
+                organization or project.
+            parent (:class:`str`):
+                Required. Resource name of the organization or project,
+                for example ``organizations/433245324/locations/europe``
+                or ``projects/project-id/locations/asia``.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, str]]): Strings which should be
+                sent along with the request as metadata.
+
+        Returns:
+            google.cloud.dlp_v2.services.dlp_service.pagers.ListFileStoreDataProfilesAsyncPager:
+                List of file store data profiles
+                generated for a given organization or
+                project.
+
+                Iterating over this object will yield
+                results and resolve additional pages
+                automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([parent])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, dlp.ListFileStoreDataProfilesRequest):
+            request = dlp.ListFileStoreDataProfilesRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if parent is not None:
+            request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.list_file_store_data_profiles
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__aiter__` convenience method.
+        response = pagers.ListFileStoreDataProfilesAsyncPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def get_file_store_data_profile(
+        self,
+        request: Optional[Union[dlp.GetFileStoreDataProfileRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, str]] = (),
+    ) -> dlp.FileStoreDataProfile:
+        r"""Gets a file store data profile.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import dlp_v2
+
+            async def sample_get_file_store_data_profile():
+                # Create a client
+                client = dlp_v2.DlpServiceAsyncClient()
+
+                # Initialize request argument(s)
+                request = dlp_v2.GetFileStoreDataProfileRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = await client.get_file_store_data_profile(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.dlp_v2.types.GetFileStoreDataProfileRequest, dict]]):
+                The request object. Request to get a file store data
+                profile.
+            name (:class:`str`):
+                Required. Resource name, for example
+                ``organizations/12345/locations/us/fileStoreDataProfiles/53234423``.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, str]]): Strings which should be
+                sent along with the request as metadata.
+
+        Returns:
+            google.cloud.dlp_v2.types.FileStoreDataProfile:
+                The profile for a file store.
+
+                   -  Cloud Storage: maps 1:1 with a bucket.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, dlp.GetFileStoreDataProfileRequest):
+            request = dlp.GetFileStoreDataProfileRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if name is not None:
+            request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.get_file_store_data_profile
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def delete_file_store_data_profile(
+        self,
+        request: Optional[Union[dlp.DeleteFileStoreDataProfileRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, str]] = (),
+    ) -> None:
+        r"""Delete a FileStoreDataProfile. Will not prevent the
+        profile from being regenerated if the resource is still
+        included in a discovery configuration.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import dlp_v2
+
+            async def sample_delete_file_store_data_profile():
+                # Create a client
+                client = dlp_v2.DlpServiceAsyncClient()
+
+                # Initialize request argument(s)
+                request = dlp_v2.DeleteFileStoreDataProfileRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                await client.delete_file_store_data_profile(request=request)
+
+        Args:
+            request (Optional[Union[google.cloud.dlp_v2.types.DeleteFileStoreDataProfileRequest, dict]]):
+                The request object. Request message for
+                DeleteFileStoreProfile.
+            name (:class:`str`):
+                Required. Resource name of the file
+                store data profile.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, str]]): Strings which should be
+                sent along with the request as metadata.
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        has_flattened_params = any([name])
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, dlp.DeleteFileStoreDataProfileRequest):
+            request = dlp.DeleteFileStoreDataProfileRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if name is not None:
+            request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.delete_file_store_data_profile
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
 
     async def get_table_data_profile(
         self,
@@ -5679,8 +6036,15 @@ class DlpServiceAsyncClient:
             request (Optional[Union[google.cloud.dlp_v2.types.CreateConnectionRequest, dict]]):
                 The request object. Request message for CreateConnection.
             parent (:class:`str`):
-                Required. Parent resource name in the format:
-                ``projects/{project}/locations/{location}``.
+                Required. Parent resource name.
+
+                The format of this value varies depending on the scope
+                of the request (project or organization):
+
+                -  Projects scope:
+                   ``projects/{project_id}/locations/{location_id}``
+                -  Organizations scope:
+                   ``organizations/{org_id}/locations/{location_id}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -5866,7 +6230,8 @@ class DlpServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, str]] = (),
     ) -> pagers.ListConnectionsAsyncPager:
-        r"""Lists Connections in a parent.
+        r"""Lists Connections in a parent. Use SearchConnections
+        to see all connections within an organization.
 
         .. code-block:: python
 
@@ -5899,8 +6264,10 @@ class DlpServiceAsyncClient:
             request (Optional[Union[google.cloud.dlp_v2.types.ListConnectionsRequest, dict]]):
                 The request object. Request message for ListConnections.
             parent (:class:`str`):
-                Required. Parent name, for example:
-                ``projects/project-id/locations/global``.
+                Required. Resource name of the organization or project,
+                for example,
+                ``organizations/433245324/locations/europe`` or
+                ``projects/project-id/locations/asia``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -5969,6 +6336,8 @@ class DlpServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -6018,9 +6387,10 @@ class DlpServiceAsyncClient:
                 The request object. Request message for
                 SearchConnections.
             parent (:class:`str`):
-                Required. Parent name, typically an organization,
-                without location. For example:
-                ``organizations/12345678``.
+                Required. Resource name of the organization or project
+                with a wildcard location, for example,
+                ``organizations/433245324/locations/-`` or
+                ``projects/project-id/locations/-``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -6089,6 +6459,8 @@ class DlpServiceAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 

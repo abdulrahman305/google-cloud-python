@@ -86,6 +86,8 @@ class SiteSearchEngineServiceTransport(abc.ABC):
 
         # Save the scopes.
         self._scopes = scopes
+        if not hasattr(self, "_ignore_credentials"):
+            self._ignore_credentials: bool = False
 
         # If no credentials are provided, then determine the appropriate
         # defaults.
@@ -98,7 +100,7 @@ class SiteSearchEngineServiceTransport(abc.ABC):
             credentials, _ = google.auth.load_credentials_from_file(
                 credentials_file, **scopes_kwargs, quota_project_id=quota_project_id
             )
-        elif credentials is None:
+        elif credentials is None and not self._ignore_credentials:
             credentials, _ = google.auth.default(
                 **scopes_kwargs, quota_project_id=quota_project_id
             )
@@ -188,6 +190,16 @@ class SiteSearchEngineServiceTransport(abc.ABC):
             ),
             self.fetch_domain_verification_status: gapic_v1.method.wrap_method(
                 self.fetch_domain_verification_status,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.set_uri_pattern_document_data: gapic_v1.method.wrap_method(
+                self.set_uri_pattern_document_data,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_uri_pattern_document_data: gapic_v1.method.wrap_method(
+                self.get_uri_pattern_document_data,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -320,6 +332,27 @@ class SiteSearchEngineServiceTransport(abc.ABC):
         Union[
             site_search_engine_service.FetchDomainVerificationStatusResponse,
             Awaitable[site_search_engine_service.FetchDomainVerificationStatusResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def set_uri_pattern_document_data(
+        self,
+    ) -> Callable[
+        [site_search_engine_service.SetUriPatternDocumentDataRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_uri_pattern_document_data(
+        self,
+    ) -> Callable[
+        [site_search_engine_service.GetUriPatternDocumentDataRequest],
+        Union[
+            site_search_engine_service.GetUriPatternDocumentDataResponse,
+            Awaitable[site_search_engine_service.GetUriPatternDocumentDataResponse],
         ],
     ]:
         raise NotImplementedError()

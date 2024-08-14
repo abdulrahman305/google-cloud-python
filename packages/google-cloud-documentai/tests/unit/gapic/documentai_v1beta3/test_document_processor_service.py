@@ -39,6 +39,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1395,12 +1396,7 @@ async def test_process_document_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.process_document
         ] = mock_object
@@ -1777,12 +1773,7 @@ async def test_batch_process_documents_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.batch_process_documents
         ] = mock_object
@@ -2166,12 +2157,7 @@ async def test_fetch_processor_types_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.fetch_processor_types
         ] = mock_object
@@ -2557,12 +2543,7 @@ async def test_list_processor_types_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_processor_types
         ] = mock_object
@@ -2813,12 +2794,16 @@ def test_list_processor_types_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_processor_types(request={})
+        pager = client.list_processor_types(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -3162,12 +3147,7 @@ async def test_get_processor_type_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_processor_type
         ] = mock_object
@@ -3554,12 +3534,7 @@ async def test_list_processors_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_processors
         ] = mock_object
@@ -3798,12 +3773,16 @@ def test_list_processors_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_processors(request={})
+        pager = client.list_processors(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -3978,6 +3957,8 @@ def test_get_processor(request_type, transport: str = "grpc"):
             default_processor_version="default_processor_version_value",
             process_endpoint="process_endpoint_value",
             kms_key_name="kms_key_name_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.get_processor(request)
 
@@ -3996,6 +3977,8 @@ def test_get_processor(request_type, transport: str = "grpc"):
     assert response.default_processor_version == "default_processor_version_value"
     assert response.process_endpoint == "process_endpoint_value"
     assert response.kms_key_name == "kms_key_name_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_processor_empty_call():
@@ -4101,6 +4084,8 @@ async def test_get_processor_empty_call_async():
                 default_processor_version="default_processor_version_value",
                 process_endpoint="process_endpoint_value",
                 kms_key_name="kms_key_name_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_processor()
@@ -4132,12 +4117,7 @@ async def test_get_processor_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_processor
         ] = mock_object
@@ -4181,6 +4161,8 @@ async def test_get_processor_async(
                 default_processor_version="default_processor_version_value",
                 process_endpoint="process_endpoint_value",
                 kms_key_name="kms_key_name_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_processor(request)
@@ -4200,6 +4182,8 @@ async def test_get_processor_async(
     assert response.default_processor_version == "default_processor_version_value"
     assert response.process_endpoint == "process_endpoint_value"
     assert response.kms_key_name == "kms_key_name_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -4524,12 +4508,7 @@ async def test_train_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.train_processor_version
         ] = mock_object
@@ -4781,6 +4760,8 @@ def test_get_processor_version(request_type, transport: str = "grpc"):
             kms_key_version_name="kms_key_version_name_value",
             google_managed=True,
             model_type=processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.get_processor_version(request)
 
@@ -4802,6 +4783,8 @@ def test_get_processor_version(request_type, transport: str = "grpc"):
         response.model_type
         == processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE
     )
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_processor_version_empty_call():
@@ -4918,6 +4901,8 @@ async def test_get_processor_version_empty_call_async():
                 kms_key_version_name="kms_key_version_name_value",
                 google_managed=True,
                 model_type=processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_processor_version()
@@ -4949,12 +4934,7 @@ async def test_get_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_processor_version
         ] = mock_object
@@ -5000,6 +4980,8 @@ async def test_get_processor_version_async(
                 kms_key_version_name="kms_key_version_name_value",
                 google_managed=True,
                 model_type=processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_processor_version(request)
@@ -5022,6 +5004,8 @@ async def test_get_processor_version_async(
         response.model_type
         == processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE
     )
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -5359,12 +5343,7 @@ async def test_list_processor_versions_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_processor_versions
         ] = mock_object
@@ -5615,12 +5594,16 @@ def test_list_processor_versions_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_processor_versions(request={})
+        pager = client.list_processor_versions(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -5949,12 +5932,7 @@ async def test_delete_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_processor_version
         ] = mock_object
@@ -6342,12 +6320,7 @@ async def test_deploy_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.deploy_processor_version
         ] = mock_object
@@ -6735,12 +6708,7 @@ async def test_undeploy_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.undeploy_processor_version
         ] = mock_object
@@ -6980,6 +6948,8 @@ def test_create_processor(request_type, transport: str = "grpc"):
             default_processor_version="default_processor_version_value",
             process_endpoint="process_endpoint_value",
             kms_key_name="kms_key_name_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.create_processor(request)
 
@@ -6998,6 +6968,8 @@ def test_create_processor(request_type, transport: str = "grpc"):
     assert response.default_processor_version == "default_processor_version_value"
     assert response.process_endpoint == "process_endpoint_value"
     assert response.kms_key_name == "kms_key_name_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_create_processor_empty_call():
@@ -7105,6 +7077,8 @@ async def test_create_processor_empty_call_async():
                 default_processor_version="default_processor_version_value",
                 process_endpoint="process_endpoint_value",
                 kms_key_name="kms_key_name_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.create_processor()
@@ -7136,12 +7110,7 @@ async def test_create_processor_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_processor
         ] = mock_object
@@ -7185,6 +7154,8 @@ async def test_create_processor_async(
                 default_processor_version="default_processor_version_value",
                 process_endpoint="process_endpoint_value",
                 kms_key_name="kms_key_name_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.create_processor(request)
@@ -7204,6 +7175,8 @@ async def test_create_processor_async(
     assert response.default_processor_version == "default_processor_version_value"
     assert response.process_endpoint == "process_endpoint_value"
     assert response.kms_key_name == "kms_key_name_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -7529,12 +7502,7 @@ async def test_delete_processor_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_processor
         ] = mock_object
@@ -7901,12 +7869,7 @@ async def test_enable_processor_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.enable_processor
         ] = mock_object
@@ -8199,12 +8162,7 @@ async def test_disable_processor_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.disable_processor
         ] = mock_object
@@ -8508,12 +8466,7 @@ async def test_set_default_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_default_processor_version
         ] = mock_object
@@ -8802,12 +8755,7 @@ async def test_review_document_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.review_document
         ] = mock_object
@@ -9185,12 +9133,7 @@ async def test_evaluate_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.evaluate_processor_version
         ] = mock_object
@@ -9572,12 +9515,7 @@ async def test_get_evaluation_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_evaluation
         ] = mock_object
@@ -9950,12 +9888,7 @@ async def test_list_evaluations_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_evaluations
         ] = mock_object
@@ -10194,12 +10127,16 @@ def test_list_evaluations_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_evaluations(request={})
+        pager = client.list_evaluations(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -10524,12 +10461,7 @@ async def test_import_processor_version_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.import_processor_version
         ] = mock_object
@@ -12794,6 +12726,8 @@ def test_get_processor_rest(request_type):
             default_processor_version="default_processor_version_value",
             process_endpoint="process_endpoint_value",
             kms_key_name="kms_key_name_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -12816,6 +12750,8 @@ def test_get_processor_rest(request_type):
     assert response.default_processor_version == "default_processor_version_value"
     assert response.process_endpoint == "process_endpoint_value"
     assert response.kms_key_name == "kms_key_name_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_processor_rest_use_cached_wrapped_rpc():
@@ -13431,6 +13367,8 @@ def test_get_processor_version_rest(request_type):
             kms_key_version_name="kms_key_version_name_value",
             google_managed=True,
             model_type=processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -13456,6 +13394,8 @@ def test_get_processor_version_rest(request_type):
         response.model_type
         == processor.ProcessorVersion.ModelType.MODEL_TYPE_GENERATIVE
     )
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_processor_version_rest_use_cached_wrapped_rpc():
@@ -15095,6 +15035,8 @@ def test_create_processor_rest(request_type):
         "process_endpoint": "process_endpoint_value",
         "create_time": {"seconds": 751, "nanos": 543},
         "kms_key_name": "kms_key_name_value",
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -15178,6 +15120,8 @@ def test_create_processor_rest(request_type):
             default_processor_version="default_processor_version_value",
             process_endpoint="process_endpoint_value",
             kms_key_name="kms_key_name_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -15200,6 +15144,8 @@ def test_create_processor_rest(request_type):
     assert response.default_processor_version == "default_processor_version_value"
     assert response.process_endpoint == "process_endpoint_value"
     assert response.kms_key_name == "kms_key_name_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_create_processor_rest_use_cached_wrapped_rpc():

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.6...google-cloud-commerce-consumer-procurement-v0.1.7) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([a6f7356](https://github.com/googleapis/google-cloud-python/commit/a6f7356f1549721f9fab83d4dcfa226cec1965d0))
+
+## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.5...google-cloud-commerce-consumer-procurement-v0.1.6) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12865](https://github.com/googleapis/google-cloud-python/issues/12865)) ([7f9dedb](https://github.com/googleapis/google-cloud-python/commit/7f9dedb3abc7636cbcd97e21ac857844b885b599))
+
 ## [0.1.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.4...google-cloud-commerce-consumer-procurement-v0.1.5) (2024-03-05)
 
 

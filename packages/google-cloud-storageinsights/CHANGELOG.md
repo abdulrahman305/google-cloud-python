@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storageinsights-v0.1.9...google-cloud-storageinsights-v0.1.10) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([9cdac77](https://github.com/googleapis/google-cloud-python/commit/9cdac77b20a8c9720aa668639e3ca6d1e759a2de))
+
+## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storageinsights-v0.1.8...google-cloud-storageinsights-v0.1.9) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12870](https://github.com/googleapis/google-cloud-python/issues/12870)) ([4d16761](https://github.com/googleapis/google-cloud-python/commit/4d16761640dd8e35410b3219b7d675d7668d2f88))
+
 ## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storageinsights-v0.1.7...google-cloud-storageinsights-v0.1.8) (2024-03-05)
 
 

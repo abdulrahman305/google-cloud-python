@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.10.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.7...google-cloud-run-v0.10.8) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([52db52e](https://github.com/googleapis/google-cloud-python/commit/52db52ea05c6883b07956d323fdd1d3029806374))
+
+## [0.10.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.6...google-cloud-run-v0.10.7) (2024-07-10)
+
+
+### Features
+
+* add Job ExecutionReference.completion_status to show status of the most recent execution ([0829cc1](https://github.com/googleapis/google-cloud-python/commit/0829cc12b7521b9ecb4ef302d86e0863f9159d7e))
+* add Job start_execution_token and run_execution_token to execute jobs immediately on creation ([0829cc1](https://github.com/googleapis/google-cloud-python/commit/0829cc12b7521b9ecb4ef302d86e0863f9159d7e))
+* support update_mask in Cloud Run UpdateService  ([0829cc1](https://github.com/googleapis/google-cloud-python/commit/0829cc12b7521b9ecb4ef302d86e0863f9159d7e))
+
+
+### Documentation
+
+* clarify optional fields in Cloud Run requests ([0829cc1](https://github.com/googleapis/google-cloud-python/commit/0829cc12b7521b9ecb4ef302d86e0863f9159d7e))
+
+## [0.10.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.5...google-cloud-run-v0.10.6) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12869](https://github.com/googleapis/google-cloud-python/issues/12869)) ([e42edbc](https://github.com/googleapis/google-cloud-python/commit/e42edbcf7f4d8ed66b6645c96a01c55fb8cd7666))
+
 ## [0.10.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.4...google-cloud-run-v0.10.5) (2024-03-05)
 
 

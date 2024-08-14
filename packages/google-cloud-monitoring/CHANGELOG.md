@@ -4,6 +4,27 @@
 
 [1]: https://pypi.org/project/google-cloud-monitoring/#history
 
+## [2.22.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.22.1...google-cloud-monitoring-v2.22.2) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([d95af77](https://github.com/googleapis/google-cloud-python/commit/d95af77248f0935a5fe3dba1fccc75124c8b1451))
+
+## [2.22.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.22.0...google-cloud-monitoring-v2.22.1) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12868](https://github.com/googleapis/google-cloud-python/issues/12868)) ([0e39c1a](https://github.com/googleapis/google-cloud-python/commit/0e39c1a0ab46757bcf80a178d9bd422f6dcb24c6))
+
+## [2.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.21.0...google-cloud-monitoring-v2.22.0) (2024-06-24)
+
+
+### Features
+
+* Add support to add links in AlertPolicy ([7fcde4f](https://github.com/googleapis/google-cloud-python/commit/7fcde4f8c1d8cbc5351cb3fb799450bbb78d5a2a))
+
 ## [2.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.20.0...google-cloud-monitoring-v2.21.0) (2024-04-17)
 
 

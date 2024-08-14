@@ -122,17 +122,14 @@ from .cloud_deploy import (
     PromoteReleaseRule,
     Release,
     RenderMetadata,
-    RepairMode,
     RepairPhase,
     RepairRolloutOperation,
     RepairRolloutRule,
     RepairState,
-    Retry,
     RetryAttempt,
     RetryJobRequest,
     RetryJobResponse,
     RetryPhase,
-    Rollback,
     RollbackAttempt,
     RollbackTargetConfig,
     RollbackTargetRequest,
@@ -160,7 +157,9 @@ from .cloud_deploy import (
     VerifyJob,
     VerifyJobRun,
 )
+from .customtargettype_notification_payload import CustomTargetTypeNotificationEvent
 from .deliverypipeline_notification_payload import DeliveryPipelineNotificationEvent
+from .deploypolicy_notification_payload import DeployPolicyNotificationEvent
 from .jobrun_notification_payload import JobRunNotificationEvent
 from .log_enums import Type
 from .release_notification_payload import ReleaseNotificationEvent
@@ -277,16 +276,13 @@ __all__ = (
     "PromoteReleaseRule",
     "Release",
     "RenderMetadata",
-    "RepairMode",
     "RepairPhase",
     "RepairRolloutOperation",
     "RepairRolloutRule",
-    "Retry",
     "RetryAttempt",
     "RetryJobRequest",
     "RetryJobResponse",
     "RetryPhase",
-    "Rollback",
     "RollbackAttempt",
     "RollbackTargetConfig",
     "RollbackTargetRequest",
@@ -315,7 +311,9 @@ __all__ = (
     "BackoffMode",
     "RepairState",
     "SkaffoldSupportState",
+    "CustomTargetTypeNotificationEvent",
     "DeliveryPipelineNotificationEvent",
+    "DeployPolicyNotificationEvent",
     "JobRunNotificationEvent",
     "Type",
     "ReleaseNotificationEvent",

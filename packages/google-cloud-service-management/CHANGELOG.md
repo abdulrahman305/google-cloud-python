@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.8.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-management-v1.8.4...google-cloud-service-management-v1.8.5) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([42c4d04](https://github.com/googleapis/google-cloud-python/commit/42c4d04ee1362ba0ed0f1b6a134ac8e409875b63))
+
+## [1.8.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-management-v1.8.3...google-cloud-service-management-v1.8.4) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow protobuf 5.x ([04ec204](https://github.com/googleapis/google-cloud-python/commit/04ec2046ed11c690273912e1bb6220823c7dd7c0))
+
 ## [1.8.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-management-v1.8.2...google-cloud-service-management-v1.8.3) (2024-03-05)
 
 

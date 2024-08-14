@@ -38,6 +38,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1374,12 +1375,7 @@ async def test_list_functions_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_functions
         ] = mock_object
@@ -1537,12 +1533,16 @@ def test_list_functions_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_functions(request={})
+        pager = client.list_functions(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -1731,6 +1731,7 @@ def test_get_function(request_type, transport: str = "grpc"):
             source_token="source_token_value",
             docker_repository="docker_repository_value",
             docker_registry=functions.CloudFunction.DockerRegistry.CONTAINER_REGISTRY,
+            build_service_account="build_service_account_value",
             source_archive_url="source_archive_url_value",
         )
         response = client.get_function(request)
@@ -1772,6 +1773,7 @@ def test_get_function(request_type, transport: str = "grpc"):
         response.docker_registry
         == functions.CloudFunction.DockerRegistry.CONTAINER_REGISTRY
     )
+    assert response.build_service_account == "build_service_account_value"
 
 
 def test_get_function_empty_call():
@@ -1891,6 +1893,7 @@ async def test_get_function_empty_call_async():
                 source_token="source_token_value",
                 docker_repository="docker_repository_value",
                 docker_registry=functions.CloudFunction.DockerRegistry.CONTAINER_REGISTRY,
+                build_service_account="build_service_account_value",
             )
         )
         response = await client.get_function()
@@ -1922,12 +1925,7 @@ async def test_get_function_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_function
         ] = mock_object
@@ -1984,6 +1982,7 @@ async def test_get_function_async(
                 source_token="source_token_value",
                 docker_repository="docker_repository_value",
                 docker_registry=functions.CloudFunction.DockerRegistry.CONTAINER_REGISTRY,
+                build_service_account="build_service_account_value",
             )
         )
         response = await client.get_function(request)
@@ -2025,6 +2024,7 @@ async def test_get_function_async(
         response.docker_registry
         == functions.CloudFunction.DockerRegistry.CONTAINER_REGISTRY
     )
+    assert response.build_service_account == "build_service_account_value"
 
 
 @pytest.mark.asyncio
@@ -2338,12 +2338,7 @@ async def test_create_function_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_function
         ] = mock_object
@@ -2713,12 +2708,7 @@ async def test_update_function_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_function
         ] = mock_object
@@ -3082,12 +3072,7 @@ async def test_delete_function_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_function
         ] = mock_object
@@ -3460,12 +3445,7 @@ async def test_call_function_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.call_function
         ] = mock_object
@@ -3857,12 +3837,7 @@ async def test_generate_upload_url_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.generate_upload_url
         ] = mock_object
@@ -4163,12 +4138,7 @@ async def test_generate_download_url_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.generate_download_url
         ] = mock_object
@@ -4459,12 +4429,7 @@ async def test_set_iam_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_iam_policy
         ] = mock_object
@@ -4767,12 +4732,7 @@ async def test_get_iam_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_iam_policy
         ] = mock_object
@@ -5083,12 +5043,7 @@ async def test_test_iam_permissions_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.test_iam_permissions
         ] = mock_object
@@ -5492,6 +5447,7 @@ def test_get_function_rest(request_type):
             source_token="source_token_value",
             docker_repository="docker_repository_value",
             docker_registry=functions.CloudFunction.DockerRegistry.CONTAINER_REGISTRY,
+            build_service_account="build_service_account_value",
             source_archive_url="source_archive_url_value",
         )
 
@@ -5537,6 +5493,7 @@ def test_get_function_rest(request_type):
         response.docker_registry
         == functions.CloudFunction.DockerRegistry.CONTAINER_REGISTRY
     )
+    assert response.build_service_account == "build_service_account_value"
 
 
 def test_get_function_rest_use_cached_wrapped_rpc():
@@ -5871,6 +5828,7 @@ def test_create_function_rest(request_type):
         "docker_registry": 1,
         "automatic_update_policy": {},
         "on_deploy_update_policy": {"runtime_version": "runtime_version_value"},
+        "build_service_account": "build_service_account_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -6306,6 +6264,7 @@ def test_update_function_rest(request_type):
         "docker_registry": 1,
         "automatic_update_policy": {},
         "on_deploy_update_policy": {"runtime_version": "runtime_version_value"},
+        "build_service_account": "build_service_account_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency

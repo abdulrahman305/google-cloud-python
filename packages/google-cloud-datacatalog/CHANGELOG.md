@@ -4,6 +4,37 @@
 
 [1]: https://pypi.org/project/google-cloud-datacatalog/#history
 
+## [3.20.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.20.0...google-cloud-datacatalog-v3.20.1) (2024-07-31)
+
+
+### Documentation
+
+* [google-cloud-datacatalog] mark DataplexTransferStatus.MIGRATED as deprecated ([#12968](https://github.com/googleapis/google-cloud-python/issues/12968)) ([6cebf3e](https://github.com/googleapis/google-cloud-python/commit/6cebf3e1f0d3014cea558e280e4ebf41b5d477ec))
+
+## [3.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.19.1...google-cloud-datacatalog-v3.20.0) (2024-07-30)
+
+
+### Features
+
+* [google-cloud-datacatalog] add DataplexTransferStatus enum and field to TagTemplate ([8a2814b](https://github.com/googleapis/google-cloud-python/commit/8a2814bc35b17bbf2611de1a43dd5239f87ded24))
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([ba1064f](https://github.com/googleapis/google-cloud-python/commit/ba1064fd6a63ccbe8a390c0026f32c5772c728a5))
+
+
+### Documentation
+
+* update field comments for updated IDENTIFIER field behavior ([8a2814b](https://github.com/googleapis/google-cloud-python/commit/8a2814bc35b17bbf2611de1a43dd5239f87ded24))
+
+## [3.19.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.19.0...google-cloud-datacatalog-v3.19.1) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12865](https://github.com/googleapis/google-cloud-python/issues/12865)) ([7f9dedb](https://github.com/googleapis/google-cloud-python/commit/7f9dedb3abc7636cbcd97e21ac857844b885b599))
+
 ## [3.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.18.3...google-cloud-datacatalog-v3.19.0) (2024-03-22)
 
 

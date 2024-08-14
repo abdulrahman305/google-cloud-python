@@ -27,6 +27,7 @@ import math
 from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1247,12 +1248,7 @@ async def test_search_catalog_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.search_catalog
         ] = mock_object
@@ -1455,9 +1451,13 @@ def test_search_catalog_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
-        pager = client.search_catalog(request={})
+        retry = retries.Retry()
+        timeout = 5
+        pager = client.search_catalog(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -1788,12 +1788,7 @@ async def test_create_entry_group_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_entry_group
         ] = mock_object
@@ -2205,12 +2200,7 @@ async def test_update_entry_group_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_entry_group
         ] = mock_object
@@ -2604,12 +2594,7 @@ async def test_get_entry_group_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_entry_group
         ] = mock_object
@@ -2992,12 +2977,7 @@ async def test_delete_entry_group_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_entry_group
         ] = mock_object
@@ -3374,12 +3354,7 @@ async def test_list_entry_groups_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_entry_groups
         ] = mock_object
@@ -3629,12 +3604,16 @@ def test_list_entry_groups_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_entry_groups(request={})
+        pager = client.list_entry_groups(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -3964,12 +3943,7 @@ async def test_create_entry_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_entry
         ] = mock_object
@@ -4362,12 +4336,7 @@ async def test_update_entry_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_entry
         ] = mock_object
@@ -4736,12 +4705,7 @@ async def test_delete_entry_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_entry
         ] = mock_object
@@ -5105,12 +5069,7 @@ async def test_get_entry_async_use_cached_wrapped_rpc(transport: str = "grpc_asy
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_entry
         ] = mock_object
@@ -5489,12 +5448,7 @@ async def test_lookup_entry_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.lookup_entry
         ] = mock_object
@@ -5723,12 +5677,7 @@ async def test_list_entries_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_entries
         ] = mock_object
@@ -5966,12 +5915,16 @@ def test_list_entries_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_entries(request={})
+        pager = client.list_entries(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -6143,6 +6096,7 @@ def test_create_tag_template(request_type, transport: str = "grpc"):
         call.return_value = tags.TagTemplate(
             name="name_value",
             display_name="display_name_value",
+            dataplex_transfer_status=tags.TagTemplate.DataplexTransferStatus.MIGRATED,
         )
         response = client.create_tag_template(request)
 
@@ -6156,6 +6110,10 @@ def test_create_tag_template(request_type, transport: str = "grpc"):
     assert isinstance(response, tags.TagTemplate)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
+    assert (
+        response.dataplex_transfer_status
+        == tags.TagTemplate.DataplexTransferStatus.MIGRATED
+    )
 
 
 def test_create_tag_template_empty_call():
@@ -6268,6 +6226,7 @@ async def test_create_tag_template_empty_call_async():
             tags.TagTemplate(
                 name="name_value",
                 display_name="display_name_value",
+                dataplex_transfer_status=tags.TagTemplate.DataplexTransferStatus.MIGRATED,
             )
         )
         response = await client.create_tag_template()
@@ -6299,12 +6258,7 @@ async def test_create_tag_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_tag_template
         ] = mock_object
@@ -6344,6 +6298,7 @@ async def test_create_tag_template_async(
             tags.TagTemplate(
                 name="name_value",
                 display_name="display_name_value",
+                dataplex_transfer_status=tags.TagTemplate.DataplexTransferStatus.MIGRATED,
             )
         )
         response = await client.create_tag_template(request)
@@ -6358,6 +6313,10 @@ async def test_create_tag_template_async(
     assert isinstance(response, tags.TagTemplate)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
+    assert (
+        response.dataplex_transfer_status
+        == tags.TagTemplate.DataplexTransferStatus.MIGRATED
+    )
 
 
 @pytest.mark.asyncio
@@ -6555,6 +6514,7 @@ def test_get_tag_template(request_type, transport: str = "grpc"):
         call.return_value = tags.TagTemplate(
             name="name_value",
             display_name="display_name_value",
+            dataplex_transfer_status=tags.TagTemplate.DataplexTransferStatus.MIGRATED,
         )
         response = client.get_tag_template(request)
 
@@ -6568,6 +6528,10 @@ def test_get_tag_template(request_type, transport: str = "grpc"):
     assert isinstance(response, tags.TagTemplate)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
+    assert (
+        response.dataplex_transfer_status
+        == tags.TagTemplate.DataplexTransferStatus.MIGRATED
+    )
 
 
 def test_get_tag_template_empty_call():
@@ -6670,6 +6634,7 @@ async def test_get_tag_template_empty_call_async():
             tags.TagTemplate(
                 name="name_value",
                 display_name="display_name_value",
+                dataplex_transfer_status=tags.TagTemplate.DataplexTransferStatus.MIGRATED,
             )
         )
         response = await client.get_tag_template()
@@ -6701,12 +6666,7 @@ async def test_get_tag_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_tag_template
         ] = mock_object
@@ -6744,6 +6704,7 @@ async def test_get_tag_template_async(
             tags.TagTemplate(
                 name="name_value",
                 display_name="display_name_value",
+                dataplex_transfer_status=tags.TagTemplate.DataplexTransferStatus.MIGRATED,
             )
         )
         response = await client.get_tag_template(request)
@@ -6758,6 +6719,10 @@ async def test_get_tag_template_async(
     assert isinstance(response, tags.TagTemplate)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
+    assert (
+        response.dataplex_transfer_status
+        == tags.TagTemplate.DataplexTransferStatus.MIGRATED
+    )
 
 
 @pytest.mark.asyncio
@@ -6929,6 +6894,7 @@ def test_update_tag_template(request_type, transport: str = "grpc"):
         call.return_value = tags.TagTemplate(
             name="name_value",
             display_name="display_name_value",
+            dataplex_transfer_status=tags.TagTemplate.DataplexTransferStatus.MIGRATED,
         )
         response = client.update_tag_template(request)
 
@@ -6942,6 +6908,10 @@ def test_update_tag_template(request_type, transport: str = "grpc"):
     assert isinstance(response, tags.TagTemplate)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
+    assert (
+        response.dataplex_transfer_status
+        == tags.TagTemplate.DataplexTransferStatus.MIGRATED
+    )
 
 
 def test_update_tag_template_empty_call():
@@ -7048,6 +7018,7 @@ async def test_update_tag_template_empty_call_async():
             tags.TagTemplate(
                 name="name_value",
                 display_name="display_name_value",
+                dataplex_transfer_status=tags.TagTemplate.DataplexTransferStatus.MIGRATED,
             )
         )
         response = await client.update_tag_template()
@@ -7079,12 +7050,7 @@ async def test_update_tag_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_tag_template
         ] = mock_object
@@ -7124,6 +7090,7 @@ async def test_update_tag_template_async(
             tags.TagTemplate(
                 name="name_value",
                 display_name="display_name_value",
+                dataplex_transfer_status=tags.TagTemplate.DataplexTransferStatus.MIGRATED,
             )
         )
         response = await client.update_tag_template(request)
@@ -7138,6 +7105,10 @@ async def test_update_tag_template_async(
     assert isinstance(response, tags.TagTemplate)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
+    assert (
+        response.dataplex_transfer_status
+        == tags.TagTemplate.DataplexTransferStatus.MIGRATED
+    )
 
 
 @pytest.mark.asyncio
@@ -7471,12 +7442,7 @@ async def test_delete_tag_template_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_tag_template
         ] = mock_object
@@ -7878,12 +7844,7 @@ async def test_create_tag_template_field_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_tag_template_field
         ] = mock_object
@@ -8311,12 +8272,7 @@ async def test_update_tag_template_field_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_tag_template_field
         ] = mock_object
@@ -8746,12 +8702,7 @@ async def test_rename_tag_template_field_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.rename_tag_template_field
         ] = mock_object
@@ -9171,12 +9122,7 @@ async def test_rename_tag_template_field_enum_value_async_use_cached_wrapped_rpc
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.rename_tag_template_field_enum_value
         ] = mock_object
@@ -9575,12 +9521,7 @@ async def test_delete_tag_template_field_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_tag_template_field
         ] = mock_object
@@ -9961,12 +9902,7 @@ async def test_create_tag_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_tag
         ] = mock_object
@@ -10341,12 +10277,7 @@ async def test_update_tag_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_tag
         ] = mock_object
@@ -10711,12 +10642,7 @@ async def test_delete_tag_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_tag
         ] = mock_object
@@ -11071,12 +10997,7 @@ async def test_list_tags_async_use_cached_wrapped_rpc(transport: str = "grpc_asy
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_tags
         ] = mock_object
@@ -11314,12 +11235,16 @@ def test_list_tags_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_tags(request={})
+        pager = client.list_tags(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -11633,12 +11558,7 @@ async def test_set_iam_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_iam_policy
         ] = mock_object
@@ -12021,12 +11941,7 @@ async def test_get_iam_policy_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_iam_policy
         ] = mock_object
@@ -12417,12 +12332,7 @@ async def test_test_iam_permissions_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.test_iam_permissions
         ] = mock_object

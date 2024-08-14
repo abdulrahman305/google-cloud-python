@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.18.11](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.10...google-analytics-data-v0.18.11) (2024-08-08)
+
+
+### Features
+
+* add the `Comparison` type ([2c4e4d1](https://github.com/googleapis/google-cloud-python/commit/2c4e4d12ea70dbdf1af813f114d6df7d33d8e6d3))
+* add the `ComparisonMetadata` type ([2c4e4d1](https://github.com/googleapis/google-cloud-python/commit/2c4e4d12ea70dbdf1af813f114d6df7d33d8e6d3))
+* add the `comparisons` field to the `Metadata` resource ([2c4e4d1](https://github.com/googleapis/google-cloud-python/commit/2c4e4d12ea70dbdf1af813f114d6df7d33d8e6d3))
+* add the `comparisons` field to the `RunReportRequest`, `RunPivotReportRequest` resources ([2c4e4d1](https://github.com/googleapis/google-cloud-python/commit/2c4e4d12ea70dbdf1af813f114d6df7d33d8e6d3))
+
+
+### Documentation
+
+* a comment for field `custom_definition` in message `DimensionMetadata` is changed ([2c4e4d1](https://github.com/googleapis/google-cloud-python/commit/2c4e4d12ea70dbdf1af813f114d6df7d33d8e6d3))
+
+## [0.18.10](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.9...google-analytics-data-v0.18.10) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([c6eeae0](https://github.com/googleapis/google-cloud-python/commit/c6eeae00de802d98badd3de879ce5e870ba60a3a))
+
+## [0.18.9](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.8...google-analytics-data-v0.18.9) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12863](https://github.com/googleapis/google-cloud-python/issues/12863)) ([3e6e423](https://github.com/googleapis/google-cloud-python/commit/3e6e423b86cdace8538f610941aa84c7a6217934))
+
 ## [0.18.8](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.7...google-analytics-data-v0.18.8) (2024-05-07)
 
 

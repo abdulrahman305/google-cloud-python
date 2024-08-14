@@ -84,6 +84,8 @@ class MapsPlatformDatasetsTransport(abc.ABC):
 
         # Save the scopes.
         self._scopes = scopes
+        if not hasattr(self, "_ignore_credentials"):
+            self._ignore_credentials: bool = False
 
         # If no credentials are provided, then determine the appropriate
         # defaults.
@@ -96,7 +98,7 @@ class MapsPlatformDatasetsTransport(abc.ABC):
             credentials, _ = google.auth.load_credentials_from_file(
                 credentials_file, **scopes_kwargs, quota_project_id=quota_project_id
             )
-        elif credentials is None:
+        elif credentials is None and not self._ignore_credentials:
             credentials, _ = google.auth.default(
                 **scopes_kwargs, quota_project_id=quota_project_id
             )
@@ -141,6 +143,20 @@ class MapsPlatformDatasetsTransport(abc.ABC):
             ),
             self.get_dataset: gapic_v1.method.wrap_method(
                 self.get_dataset,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.fetch_dataset_errors: gapic_v1.method.wrap_method(
+                self.fetch_dataset_errors,
                 default_retry=retries.Retry(
                     initial=1.0,
                     maximum=10.0,
@@ -207,6 +223,18 @@ class MapsPlatformDatasetsTransport(abc.ABC):
     ) -> Callable[
         [maps_platform_datasets.GetDatasetRequest],
         Union[dataset.Dataset, Awaitable[dataset.Dataset]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def fetch_dataset_errors(
+        self,
+    ) -> Callable[
+        [maps_platform_datasets.FetchDatasetErrorsRequest],
+        Union[
+            maps_platform_datasets.FetchDatasetErrorsResponse,
+            Awaitable[maps_platform_datasets.FetchDatasetErrorsResponse],
+        ],
     ]:
         raise NotImplementedError()
 

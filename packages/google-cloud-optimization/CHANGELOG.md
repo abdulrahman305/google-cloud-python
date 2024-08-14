@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.8.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-optimization-v1.8.4...google-cloud-optimization-v1.8.5) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([d95af77](https://github.com/googleapis/google-cloud-python/commit/d95af77248f0935a5fe3dba1fccc75124c8b1451))
+
+## [1.8.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-optimization-v1.8.3...google-cloud-optimization-v1.8.4) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12868](https://github.com/googleapis/google-cloud-python/issues/12868)) ([0e39c1a](https://github.com/googleapis/google-cloud-python/commit/0e39c1a0ab46757bcf80a178d9bd422f6dcb24c6))
+
 ## [1.8.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-optimization-v1.8.2...google-cloud-optimization-v1.8.3) (2024-03-05)
 
 

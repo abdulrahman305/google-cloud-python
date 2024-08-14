@@ -126,7 +126,8 @@ class DeliveryServiceGrpcTransport(DeliveryServiceTransport):
 
         if isinstance(channel, grpc.Channel):
             # Ignore credentials if a channel was passed.
-            credentials = False
+            credentials = None
+            self._ignore_credentials = True
             # If a channel was explicitly provided, set it.
             self._grpc_channel = channel
             self._ssl_channel_credentials = None
@@ -305,8 +306,8 @@ class DeliveryServiceGrpcTransport(DeliveryServiceTransport):
         Writes updated ``DeliveryVehicle`` data to Fleet Engine, and
         assigns ``Tasks`` to the ``DeliveryVehicle``. You cannot update
         the name of the ``DeliveryVehicle``. You *can* update
-        ``remaining_vehicle_journey_segments`` though, but it must
-        contain all of the ``VehicleJourneySegment``\ s currently on the
+        ``remaining_vehicle_journey_segments``, but it must contain all
+        of the ``VehicleJourneySegment``\ s to be persisted on the
         ``DeliveryVehicle``. The ``task_id``\ s are retrieved from
         ``remaining_vehicle_journey_segments``, and their corresponding
         ``Tasks`` are assigned to the ``DeliveryVehicle`` if they have

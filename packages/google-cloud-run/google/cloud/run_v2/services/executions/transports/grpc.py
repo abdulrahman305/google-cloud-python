@@ -124,7 +124,8 @@ class ExecutionsGrpcTransport(ExecutionsTransport):
 
         if isinstance(channel, grpc.Channel):
             # Ignore credentials if a channel was passed.
-            credentials = False
+            credentials = None
+            self._ignore_credentials = True
             # If a channel was explicitly provided, set it.
             self._grpc_channel = channel
             self._ssl_channel_credentials = None
@@ -282,7 +283,8 @@ class ExecutionsGrpcTransport(ExecutionsTransport):
     ) -> Callable[[execution.ListExecutionsRequest], execution.ListExecutionsResponse]:
         r"""Return a callable for the list executions method over gRPC.
 
-        Lists Executions from a Job.
+        Lists Executions from a Job. Results are sorted by
+        creation time, descending.
 
         Returns:
             Callable[[~.ListExecutionsRequest],

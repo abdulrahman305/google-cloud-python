@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-workstations-v0.5.7...google-cloud-workstations-v0.5.8) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([4adddf4](https://github.com/googleapis/google-cloud-python/commit/4adddf4d90634e454ee006774bfc631fc12c1700))
+
+## [0.5.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-workstations-v0.5.6...google-cloud-workstations-v0.5.7) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12871](https://github.com/googleapis/google-cloud-python/issues/12871)) ([73b35d5](https://github.com/googleapis/google-cloud-python/commit/73b35d56f8626d99ce7c3902a8c223cc09b4ca74))
+
 ## [0.5.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-workstations-v0.5.5...google-cloud-workstations-v0.5.6) (2024-03-05)
 
 

@@ -4,6 +4,35 @@
 
 [1]: https://pypi.org/project/google-cloud-translate/#history
 
+## [3.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.15.5...google-cloud-translate-v3.16.0) (2024-08-08)
+
+
+### Features
+
+* Adds AdaptiveMt HTML/Glossary support ([edebf70](https://github.com/googleapis/google-cloud-python/commit/edebf70203f9973ef4b05d6b8bf2af31ee0fd0b7))
+* Adds protos for Custom Translation API (AutoML) ([edebf70](https://github.com/googleapis/google-cloud-python/commit/edebf70203f9973ef4b05d6b8bf2af31ee0fd0b7))
+* Adds protos for Romanization APIs ([edebf70](https://github.com/googleapis/google-cloud-python/commit/edebf70203f9973ef4b05d6b8bf2af31ee0fd0b7))
+* Adds protos for Transliteration in V3 Advanced translate text ([edebf70](https://github.com/googleapis/google-cloud-python/commit/edebf70203f9973ef4b05d6b8bf2af31ee0fd0b7))
+
+
+### Documentation
+
+* Fixes typos in docs ([edebf70](https://github.com/googleapis/google-cloud-python/commit/edebf70203f9973ef4b05d6b8bf2af31ee0fd0b7))
+
+## [3.15.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.15.4...google-cloud-translate-v3.15.5) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([9cdac77](https://github.com/googleapis/google-cloud-python/commit/9cdac77b20a8c9720aa668639e3ca6d1e759a2de))
+
+## [3.15.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.15.3...google-cloud-translate-v3.15.4) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12870](https://github.com/googleapis/google-cloud-python/issues/12870)) ([4d16761](https://github.com/googleapis/google-cloud-python/commit/4d16761640dd8e35410b3219b7d675d7668d2f88))
+
 ## [3.15.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.15.2...google-cloud-translate-v3.15.3) (2024-03-05)
 
 

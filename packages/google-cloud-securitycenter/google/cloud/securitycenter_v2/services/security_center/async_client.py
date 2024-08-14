@@ -60,6 +60,7 @@ from google.cloud.securitycenter_v2.types import (
     attack_path,
     backup_disaster_recovery,
     bigquery_export,
+    cloud_armor,
     cloud_dlp_data_profile,
     cloud_dlp_inspection,
     compliance,
@@ -69,6 +70,7 @@ from google.cloud.securitycenter_v2.types import (
     exfiltration,
 )
 from google.cloud.securitycenter_v2.types import (
+    group_membership,
     iam_binding,
     indicator,
     kernel_rootkit,
@@ -81,6 +83,11 @@ from google.cloud.securitycenter_v2.types import (
     security_posture,
     securitycenter_service,
     simulation,
+)
+from google.cloud.securitycenter_v2.types import (
+    toxic_combination,
+    valued_resource,
+    vulnerability,
 )
 from google.cloud.securitycenter_v2.types import external_system as gcs_external_system
 from google.cloud.securitycenter_v2.types import (
@@ -95,13 +102,13 @@ from google.cloud.securitycenter_v2.types import finding
 from google.cloud.securitycenter_v2.types import finding as gcs_finding
 from google.cloud.securitycenter_v2.types import mute_config
 from google.cloud.securitycenter_v2.types import mute_config as gcs_mute_config
+from google.cloud.securitycenter_v2.types import notebook
 from google.cloud.securitycenter_v2.types import notification_config
-from google.cloud.securitycenter_v2.types import org_policy, process
+from google.cloud.securitycenter_v2.types import org_policy, process, resource
 from google.cloud.securitycenter_v2.types import resource_value_config
 from google.cloud.securitycenter_v2.types import security_marks
 from google.cloud.securitycenter_v2.types import source
 from google.cloud.securitycenter_v2.types import source as gcs_source
-from google.cloud.securitycenter_v2.types import valued_resource, vulnerability
 
 from .client import SecurityCenterClient
 from .transports.base import DEFAULT_CLIENT_INFO, SecurityCenterTransport
@@ -396,7 +403,6 @@ class SecurityCenterAsyncClient:
                 # Initialize request argument(s)
                 requests = securitycenter_v2.CreateResourceValueConfigRequest()
                 requests.parent = "parent_value"
-                requests.resource_value_config.tag_values = ['tag_values_value1', 'tag_values_value2']
 
                 request = securitycenter_v2.BatchCreateResourceValueConfigsRequest(
                     parent="parent_value",
@@ -689,9 +695,9 @@ class SecurityCenterAsyncClient:
             parent (:class:`str`):
                 Required. The name of the parent resource of the new
                 BigQuery export. Its format is
-                "organizations/[organization_id]/locations/[location_id]",
-                "folders/[folder_id]/locations/[location_id]", or
-                "projects/[project_id]/locations/[location_id]".
+                ``organizations/[organization_id]/locations/[location_id]``,
+                ``folders/[folder_id]/locations/[location_id]``, or
+                ``projects/[project_id]/locations/[location_id]``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -955,7 +961,7 @@ class SecurityCenterAsyncClient:
                 # Initialize request argument(s)
                 mute_config = securitycenter_v2.MuteConfig()
                 mute_config.filter = "filter_value"
-                mute_config.type_ = "STATIC"
+                mute_config.type_ = "DYNAMIC"
 
                 request = securitycenter_v2.CreateMuteConfigRequest(
                     parent="parent_value",
@@ -976,9 +982,9 @@ class SecurityCenterAsyncClient:
             parent (:class:`str`):
                 Required. Resource name of the new mute configs's
                 parent. Its format is
-                "organizations/[organization_id]/locations/[location_id]",
-                "folders/[folder_id]/locations/[location_id]", or
-                "projects/[project_id]/locations/[location_id]".
+                ``organizations/[organization_id]/locations/[location_id]``,
+                ``folders/[folder_id]/locations/[location_id]``, or
+                ``projects/[project_id]/locations/[location_id]``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1116,9 +1122,9 @@ class SecurityCenterAsyncClient:
             parent (:class:`str`):
                 Required. Resource name of the new notification config's
                 parent. Its format is
-                "organizations/[organization_id]/locations/[location_id]",
-                "folders/[folder_id]/locations/[location_id]", or
-                "projects/[project_id]/locations/[location_id]".
+                ``organizations/[organization_id]/locations/[location_id]``,
+                ``folders/[folder_id]/locations/[location_id]``, or
+                ``projects/[project_id]/locations/[location_id]``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1257,7 +1263,7 @@ class SecurityCenterAsyncClient:
                 source.
             parent (:class:`str`):
                 Required. Resource name of the new source's parent. Its
-                format should be "organizations/[organization_id]".
+                format should be ``organizations/[organization_id]``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1912,12 +1918,12 @@ class SecurityCenterAsyncClient:
                 simulation For example,
                 "organizations/123/simulations/latest".
             name (:class:`str`):
-                Required. The organization name or
-                simulation name of this simulation
-                Valid format:
+                Required. The organization name or simulation name of
+                this simulation
 
-                "organizations/{organization}/simulations/latest"
-                "organizations/{organization}/simulations/{simulation}"
+                Valid format:
+                ``organizations/{organization}/simulations/latest``
+                ``organizations/{organization}/simulations/{simulation}``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2025,7 +2031,7 @@ class SecurityCenterAsyncClient:
                 Required. The name of this valued resource
 
                 Valid format:
-                "organizations/{organization}/simulations/{simulation}/valuedResources/{valued_resource}"
+                ``organizations/{organization}/simulations/{simulation}/valuedResources/{valued_resource}``
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2522,8 +2528,8 @@ class SecurityCenterAsyncClient:
 
         Returns:
             google.cloud.securitycenter_v2.types.ResourceValueConfig:
-                A resource value config (RVC) is a
-                mapping configuration of user's
+                A resource value configuration (RVC)
+                is a mapping configuration of user's
                 resources to resource values. Used in
                 Attack path simulations.
 
@@ -2619,7 +2625,7 @@ class SecurityCenterAsyncClient:
             name (:class:`str`):
                 Required. Relative resource name of the source. Its
                 format is
-                "organizations/[organization_id]/source/[source_id]".
+                ``organizations/[organization_id]/source/[source_id]``.
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2781,14 +2787,6 @@ class SecurityCenterAsyncClient:
                 syntax: comma separated list of fields. For example:
                 "parent,resource_name".
 
-                The following fields are supported:
-
-                -  resource_name
-                -  category
-                -  state
-                -  parent
-                -  severity
-
                 This corresponds to the ``group_by`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
@@ -2858,6 +2856,8 @@ class SecurityCenterAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -2913,10 +2913,10 @@ class SecurityCenterAsyncClient:
             parent (:class:`str`):
                 Required. Name of parent to list attack paths.
 
-                Valid formats: "organizations/{organization}",
-                "organizations/{organization}/simulations/{simulation}"
-                "organizations/{organization}/simulations/{simulation}/attackExposureResults/{attack_exposure_result_v2}"
-                "organizations/{organization}/simulations/{simulation}/valuedResources/{valued_resource}"
+                Valid formats: ``organizations/{organization}``,
+                ``organizations/{organization}/simulations/{simulation}``
+                ``organizations/{organization}/simulations/{simulation}/attackExposureResults/{attack_exposure_result_v2}``
+                ``organizations/{organization}/simulations/{simulation}/valuedResources/{valued_resource}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2987,6 +2987,8 @@ class SecurityCenterAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -3046,9 +3048,9 @@ class SecurityCenterAsyncClient:
             parent (:class:`str`):
                 Required. The parent, which owns the collection of
                 BigQuery exports. Its format is
-                "organizations/[organization_id]/locations/[location_id]",
-                "folders/[folder_id]/locations/[location_id]", or
-                "projects/[project_id]/locations/[location_id]".
+                ``organizations/[organization_id]/locations/[location_id]``,
+                ``folders/[folder_id]/locations/[location_id]``, or
+                ``projects/[project_id]/locations/[location_id]``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -3117,6 +3119,8 @@ class SecurityCenterAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -3267,6 +3271,8 @@ class SecurityCenterAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -3324,11 +3330,11 @@ class SecurityCenterAsyncClient:
             parent (:class:`str`):
                 Required. The parent, which owns the collection of mute
                 configs. Its format is
-                "organizations/[organization_id]",
-                "folders/[folder_id]", "projects/[project_id]",
-                "organizations/[organization_id]/locations/[location_id]",
-                "folders/[folder_id]/locations/[location_id]",
-                "projects/[project_id]/locations/[location_id]".
+                ``organizations/[organization_id]", "folders/[folder_id]``,
+                ``projects/[project_id]``,
+                ``organizations/[organization_id]/locations/[location_id]``,
+                ``folders/[folder_id]/locations/[location_id]``,
+                ``projects/[project_id]/locations/[location_id]``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -3397,6 +3403,8 @@ class SecurityCenterAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -3523,6 +3531,8 @@ class SecurityCenterAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -3576,7 +3586,7 @@ class SecurityCenterAsyncClient:
             parent (:class:`str`):
                 Required. The parent, which owns the collection of
                 resource value configs. Its format is
-                "organizations/[organization_id]"
+                ``organizations/[organization_id]``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -3647,6 +3657,8 @@ class SecurityCenterAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -3699,8 +3711,8 @@ class SecurityCenterAsyncClient:
             parent (:class:`str`):
                 Required. Resource name of the parent of sources to
                 list. Its format should be
-                "organizations/[organization_id]",
-                "folders/[folder_id]", or "projects/[project_id]".
+                ``organizations/[organization_id]``,
+                ``folders/[folder_id]``, or ``projects/[project_id]``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -3769,6 +3781,8 @@ class SecurityCenterAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -3823,9 +3837,9 @@ class SecurityCenterAsyncClient:
             parent (:class:`str`):
                 Required. Name of parent to list exposed resources.
 
-                Valid formats: "organizations/{organization}",
-                "organizations/{organization}/simulations/{simulation}"
-                "organizations/{organization}/simulations/{simulation}/attackExposureResults/{attack_exposure_result_v2}"
+                Valid formats: ``organizations/{organization}``,
+                ``organizations/{organization}/simulations/{simulation}``
+                ``organizations/{organization}/simulations/{simulation}/attackExposureResults/{attack_exposure_result_v2}``
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -3894,6 +3908,8 @@ class SecurityCenterAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -4859,7 +4875,7 @@ class SecurityCenterAsyncClient:
                 # Initialize request argument(s)
                 mute_config = securitycenter_v2.MuteConfig()
                 mute_config.filter = "filter_value"
-                mute_config.type_ = "STATIC"
+                mute_config.type_ = "DYNAMIC"
 
                 request = securitycenter_v2.UpdateMuteConfigRequest(
                     mute_config=mute_config,
@@ -5116,11 +5132,7 @@ class SecurityCenterAsyncClient:
                 client = securitycenter_v2.SecurityCenterAsyncClient()
 
                 # Initialize request argument(s)
-                resource_value_config = securitycenter_v2.ResourceValueConfig()
-                resource_value_config.tag_values = ['tag_values_value1', 'tag_values_value2']
-
                 request = securitycenter_v2.UpdateResourceValueConfigRequest(
-                    resource_value_config=resource_value_config,
                 )
 
                 # Make the request
@@ -5141,9 +5153,13 @@ class SecurityCenterAsyncClient:
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             update_mask (:class:`google.protobuf.field_mask_pb2.FieldMask`):
-                The list of fields to be updated.
-                If empty all mutable fields will be
-                updated.
+                The list of fields to be updated. If empty all mutable
+                fields will be updated.
+
+                To update nested fields, include the top level field in
+                the mask For example, to update
+                gcp_metadata.resource_type, include the "gcp_metadata"
+                field mask
 
                 This corresponds to the ``update_mask`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -5156,8 +5172,8 @@ class SecurityCenterAsyncClient:
 
         Returns:
             google.cloud.securitycenter_v2.types.ResourceValueConfig:
-                A resource value config (RVC) is a
-                mapping configuration of user's
+                A resource value configuration (RVC)
+                is a mapping configuration of user's
                 resources to resource values. Used in
                 Attack path simulations.
 

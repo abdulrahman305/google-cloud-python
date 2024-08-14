@@ -4,6 +4,68 @@
 
 [1]: https://pypi.org/project/google-cloud-securitycenter/#history
 
+## [1.34.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycenter-v1.33.1...google-cloud-securitycenter-v1.34.0) (2024-08-08)
+
+
+### Features
+
+* enable Dynamic Mute ([6f4d816](https://github.com/googleapis/google-cloud-python/commit/6f4d816276500d9f5fc650f8148ac43e480ed665))
+* enable Dynamic Mute ([6f4d816](https://github.com/googleapis/google-cloud-python/commit/6f4d816276500d9f5fc650f8148ac43e480ed665))
+* New values `EXPLOITATION_FOR_PRIVILEGE_ESCALATION` corresponding to T1068 and `INDICATOR_REMOVAL_FILE_DELETION` corresponding to T1070.004 are added to enum `Technique` ([6f4d816](https://github.com/googleapis/google-cloud-python/commit/6f4d816276500d9f5fc650f8148ac43e480ed665))
+* New values `EXPLOITATION_FOR_PRIVILEGE_ESCALATION` corresponding to T1068 and `INDICATOR_REMOVAL_FILE_DELETION` corresponding to T1070.004 are added to enum `Technique` ([6f4d816](https://github.com/googleapis/google-cloud-python/commit/6f4d816276500d9f5fc650f8148ac43e480ed665))
+
+
+### Documentation
+
+* T1068 is added for value `EXPLOITATION_FOR_PRIVILEGE_ESCALATION` and T1070.004 is added for value `INDICATOR_REMOVAL_FILE_DELETION` for enum `Technique ([6f4d816](https://github.com/googleapis/google-cloud-python/commit/6f4d816276500d9f5fc650f8148ac43e480ed665))
+* T1068 is added for value `EXPLOITATION_FOR_PRIVILEGE_ESCALATION` and T1070.004 is added for value `INDICATOR_REMOVAL_FILE_DELETION` for enum `Technique ([6f4d816](https://github.com/googleapis/google-cloud-python/commit/6f4d816276500d9f5fc650f8148ac43e480ed665))
+
+## [1.33.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycenter-v1.33.0...google-cloud-securitycenter-v1.33.1) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([52db52e](https://github.com/googleapis/google-cloud-python/commit/52db52ea05c6883b07956d323fdd1d3029806374))
+
+## [1.33.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycenter-v1.32.1...google-cloud-securitycenter-v1.33.0) (2024-07-09)
+
+
+### Features
+
+* added attack path API methods ([242b713](https://github.com/googleapis/google-cloud-python/commit/242b713d3a991fdf125eca5ff23f1c18e656cd26))
+* added cloud provider field to list findings response ([242b713](https://github.com/googleapis/google-cloud-python/commit/242b713d3a991fdf125eca5ff23f1c18e656cd26))
+* added etd custom module protos and API methods ([242b713](https://github.com/googleapis/google-cloud-python/commit/242b713d3a991fdf125eca5ff23f1c18e656cd26))
+* added ResourceValueConfig protos and API methods ([242b713](https://github.com/googleapis/google-cloud-python/commit/242b713d3a991fdf125eca5ff23f1c18e656cd26))
+* added toxic combination field to finding ([242b713](https://github.com/googleapis/google-cloud-python/commit/242b713d3a991fdf125eca5ff23f1c18e656cd26))
+
+
+### Documentation
+
+* update examples in comments to use backticks ([242b713](https://github.com/googleapis/google-cloud-python/commit/242b713d3a991fdf125eca5ff23f1c18e656cd26))
+* update toxic combinations comments ([242b713](https://github.com/googleapis/google-cloud-python/commit/242b713d3a991fdf125eca5ff23f1c18e656cd26))
+
+## [1.32.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycenter-v1.32.0...google-cloud-securitycenter-v1.32.1) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12869](https://github.com/googleapis/google-cloud-python/issues/12869)) ([e42edbc](https://github.com/googleapis/google-cloud-python/commit/e42edbcf7f4d8ed66b6645c96a01c55fb8cd7666))
+
+## [1.32.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycenter-v1.31.0...google-cloud-securitycenter-v1.32.0) (2024-06-27)
+
+
+### Features
+
+* Add toxic_combination and group_memberships fields to finding ([83c851e](https://github.com/googleapis/google-cloud-python/commit/83c851e2aa497b3e5ae940f71dff4c45fa00be8f))
+* added cloud provider field to list findings response ([83c851e](https://github.com/googleapis/google-cloud-python/commit/83c851e2aa497b3e5ae940f71dff4c45fa00be8f))
+* added http configuration rule to ResourceValueConfig and ValuedResource API methods ([83c851e](https://github.com/googleapis/google-cloud-python/commit/83c851e2aa497b3e5ae940f71dff4c45fa00be8f))
+* added toxic combination field to finding ([83c851e](https://github.com/googleapis/google-cloud-python/commit/83c851e2aa497b3e5ae940f71dff4c45fa00be8f))
+
+
+### Documentation
+
+* Updated comments for ResourceValueConfig ([83c851e](https://github.com/googleapis/google-cloud-python/commit/83c851e2aa497b3e5ae940f71dff4c45fa00be8f))
+
 ## [1.31.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycenter-v1.30.1...google-cloud-securitycenter-v1.31.0) (2024-04-17)
 
 

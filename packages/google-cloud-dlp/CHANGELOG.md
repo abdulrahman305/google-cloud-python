@@ -4,6 +4,52 @@
 
 [1]: https://pypi.org/project/google-cloud-dlp/#history
 
+## [3.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.20.0...google-cloud-dlp-v3.21.0) (2024-08-08)
+
+
+### Features
+
+* [google-cloud-dlp] add the TagResources API ([#12983](https://github.com/googleapis/google-cloud-python/issues/12983)) ([fe3f78f](https://github.com/googleapis/google-cloud-python/commit/fe3f78f468e58c3d1e02cc4873b35912afae3166))
+
+## [3.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.19.0...google-cloud-dlp-v3.20.0) (2024-07-31)
+
+
+### Features
+
+* [google-cloud-dlp] org-level connection bindings ([871cd07](https://github.com/googleapis/google-cloud-python/commit/871cd07f6c4e88cdfeb548640f167649eabd34df))
+* add refresh frequency for data profiling ([871cd07](https://github.com/googleapis/google-cloud-python/commit/871cd07f6c4e88cdfeb548640f167649eabd34df))
+* gRPC config for get, list, and delete FileStoreDataProfiles ([871cd07](https://github.com/googleapis/google-cloud-python/commit/871cd07f6c4e88cdfeb548640f167649eabd34df))
+
+
+### Documentation
+
+* [google-cloud-dlp] replace HTML tags with CommonMark notation ([871cd07](https://github.com/googleapis/google-cloud-python/commit/871cd07f6c4e88cdfeb548640f167649eabd34df))
+* small improvements ([871cd07](https://github.com/googleapis/google-cloud-python/commit/871cd07f6c4e88cdfeb548640f167649eabd34df))
+
+## [3.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.18.1...google-cloud-dlp-v3.19.0) (2024-07-30)
+
+
+### Features
+
+* add Cloud Storage discovery support ([aed54ad](https://github.com/googleapis/google-cloud-python/commit/aed54ad804c496221b1feb8208288cc866af32d6))
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([ba1064f](https://github.com/googleapis/google-cloud-python/commit/ba1064fd6a63ccbe8a390c0026f32c5772c728a5))
+
+
+### Documentation
+
+* Updated method documentation ([aed54ad](https://github.com/googleapis/google-cloud-python/commit/aed54ad804c496221b1feb8208288cc866af32d6))
+
+## [3.18.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.18.0...google-cloud-dlp-v3.18.1) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12866](https://github.com/googleapis/google-cloud-python/issues/12866)) ([40e1810](https://github.com/googleapis/google-cloud-python/commit/40e18101eaaeefe4baa090c3b4f7a96209ea5735))
+
 ## [3.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.17.0...google-cloud-dlp-v3.18.0) (2024-05-27)
 
 

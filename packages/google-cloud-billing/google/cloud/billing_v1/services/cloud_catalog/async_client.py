@@ -340,6 +340,8 @@ class CloudCatalogAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -390,7 +392,7 @@ class CloudCatalogAsyncClient:
                 The request object. Request message for ``ListSkus``.
             parent (:class:`str`):
                 Required. The name of the service.
-                Example: "services/DA34-426B-A397"
+                Example: "services/6F81-5844-456A"
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -458,6 +460,8 @@ class CloudCatalogAsyncClient:
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 

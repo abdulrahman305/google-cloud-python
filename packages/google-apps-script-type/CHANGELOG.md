@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.10](https://github.com/googleapis/google-cloud-python/compare/google-apps-script-type-v0.3.9...google-apps-script-type-v0.3.10) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([c6eeae0](https://github.com/googleapis/google-cloud-python/commit/c6eeae00de802d98badd3de879ce5e870ba60a3a))
+
+## [0.3.9](https://github.com/googleapis/google-cloud-python/compare/google-apps-script-type-v0.3.8...google-apps-script-type-v0.3.9) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow protobuf 5.x ([04ec204](https://github.com/googleapis/google-cloud-python/commit/04ec2046ed11c690273912e1bb6220823c7dd7c0))
+
 ## [0.3.8](https://github.com/googleapis/google-cloud-python/compare/google-apps-script-type-v0.3.7...google-apps-script-type-v0.3.8) (2024-03-05)
 
 

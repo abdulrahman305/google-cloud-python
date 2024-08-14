@@ -29,6 +29,7 @@ import math
 from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1401,12 +1402,7 @@ async def test_list_effective_security_health_analytics_custom_modules_async_use
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_effective_security_health_analytics_custom_modules
         ] = mock_object
@@ -1683,14 +1679,18 @@ def test_list_effective_security_health_analytics_custom_modules_pager(
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
         pager = client.list_effective_security_health_analytics_custom_modules(
-            request={}
+            request={}, retry=retry, timeout=timeout
         )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -2071,12 +2071,7 @@ async def test_get_effective_security_health_analytics_custom_module_async_use_c
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_effective_security_health_analytics_custom_module
         ] = mock_object
@@ -2513,12 +2508,7 @@ async def test_list_security_health_analytics_custom_modules_async_use_cached_wr
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_security_health_analytics_custom_modules
         ] = mock_object
@@ -2785,12 +2775,18 @@ def test_list_security_health_analytics_custom_modules_pager(
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_security_health_analytics_custom_modules(request={})
+        pager = client.list_security_health_analytics_custom_modules(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -3158,12 +3154,7 @@ async def test_list_descendant_security_health_analytics_custom_modules_async_us
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_descendant_security_health_analytics_custom_modules
         ] = mock_object
@@ -3444,14 +3435,18 @@ def test_list_descendant_security_health_analytics_custom_modules_pager(
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
         pager = client.list_descendant_security_health_analytics_custom_modules(
-            request={}
+            request={}, retry=retry, timeout=timeout
         )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -3831,12 +3826,7 @@ async def test_get_security_health_analytics_custom_module_async_use_cached_wrap
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_security_health_analytics_custom_module
         ] = mock_object
@@ -4280,12 +4270,7 @@ async def test_create_security_health_analytics_custom_module_async_use_cached_w
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_security_health_analytics_custom_module
         ] = mock_object
@@ -4757,12 +4742,7 @@ async def test_update_security_health_analytics_custom_module_async_use_cached_w
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_security_health_analytics_custom_module
         ] = mock_object
@@ -5213,12 +5193,7 @@ async def test_delete_security_health_analytics_custom_module_async_use_cached_w
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_security_health_analytics_custom_module
         ] = mock_object
@@ -5626,12 +5601,7 @@ async def test_simulate_security_health_analytics_custom_module_async_use_cached
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.simulate_security_health_analytics_custom_module
         ] = mock_object
@@ -6102,12 +6072,7 @@ async def test_list_effective_event_threat_detection_custom_modules_async_use_ca
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_effective_event_threat_detection_custom_modules
         ] = mock_object
@@ -6384,12 +6349,18 @@ def test_list_effective_event_threat_detection_custom_modules_pager(
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_effective_event_threat_detection_custom_modules(request={})
+        pager = client.list_effective_event_threat_detection_custom_modules(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -6773,12 +6744,7 @@ async def test_get_effective_event_threat_detection_custom_module_async_use_cach
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_effective_event_threat_detection_custom_module
         ] = mock_object
@@ -7216,12 +7182,7 @@ async def test_list_event_threat_detection_custom_modules_async_use_cached_wrapp
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_event_threat_detection_custom_modules
         ] = mock_object
@@ -7480,12 +7441,18 @@ def test_list_event_threat_detection_custom_modules_pager(transport_name: str = 
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_event_threat_detection_custom_modules(request={})
+        pager = client.list_event_threat_detection_custom_modules(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -7843,12 +7810,7 @@ async def test_list_descendant_event_threat_detection_custom_modules_async_use_c
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_descendant_event_threat_detection_custom_modules
         ] = mock_object
@@ -8125,12 +8087,18 @@ def test_list_descendant_event_threat_detection_custom_modules_pager(
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_descendant_event_threat_detection_custom_modules(request={})
+        pager = client.list_descendant_event_threat_detection_custom_modules(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -8512,12 +8480,7 @@ async def test_get_event_threat_detection_custom_module_async_use_cached_wrapped
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_event_threat_detection_custom_module
         ] = mock_object
@@ -8965,12 +8928,7 @@ async def test_create_event_threat_detection_custom_module_async_use_cached_wrap
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_event_threat_detection_custom_module
         ] = mock_object
@@ -9437,12 +9395,7 @@ async def test_update_event_threat_detection_custom_module_async_use_cached_wrap
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_event_threat_detection_custom_module
         ] = mock_object
@@ -9882,12 +9835,7 @@ async def test_delete_event_threat_detection_custom_module_async_use_cached_wrap
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_event_threat_detection_custom_module
         ] = mock_object
@@ -10286,12 +10234,7 @@ async def test_validate_event_threat_detection_custom_module_async_use_cached_wr
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.validate_event_threat_detection_custom_module
         ] = mock_object
@@ -10613,12 +10556,7 @@ async def test_get_security_center_service_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_security_center_service
         ] = mock_object
@@ -11020,12 +10958,7 @@ async def test_list_security_center_services_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_security_center_services
         ] = mock_object
@@ -11282,12 +11215,18 @@ def test_list_security_center_services_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_security_center_services(request={})
+        pager = client.list_security_center_services(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -11637,12 +11576,7 @@ async def test_update_security_center_service_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_security_center_service
         ] = mock_object
@@ -19166,6 +19100,8 @@ def test_get_security_center_service_rest_required_fields(
     unset_fields = transport_class(
         credentials=ga_credentials.AnonymousCredentials()
     ).get_security_center_service._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("show_eligible_modules_only",))
     jsonified_request.update(unset_fields)
 
     # verify required fields with non-default values are left alone
@@ -19221,7 +19157,7 @@ def test_get_security_center_service_rest_unset_required_fields():
     )
 
     unset_fields = transport.get_security_center_service._get_unset_required_fields({})
-    assert set(unset_fields) == (set(()) & set(("name",)))
+    assert set(unset_fields) == (set(("showEligibleModulesOnly",)) & set(("name",)))
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -19492,6 +19428,7 @@ def test_list_security_center_services_rest_required_fields(
         (
             "page_size",
             "page_token",
+            "show_eligible_modules_only",
         )
     )
     jsonified_request.update(unset_fields)
@@ -19558,6 +19495,7 @@ def test_list_security_center_services_rest_unset_required_fields():
             (
                 "pageSize",
                 "pageToken",
+                "showEligibleModulesOnly",
             )
         )
         & set(("parent",))

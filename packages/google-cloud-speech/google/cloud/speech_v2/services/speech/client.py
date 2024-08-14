@@ -1052,6 +1052,8 @@ class SpeechClient(metaclass=SpeechClientMeta):
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -1987,7 +1989,7 @@ class SpeechClient(metaclass=SpeechClientMeta):
             files (MutableSequence[google.cloud.speech_v2.types.BatchRecognizeFileMetadata]):
                 Audio files with file metadata for
                 ASR. The maximum number of files allowed
-                to be specified is 5.
+                to be specified is 15.
 
                 This corresponds to the ``files`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2548,6 +2550,8 @@ class SpeechClient(metaclass=SpeechClientMeta):
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 
@@ -3294,6 +3298,8 @@ class SpeechClient(metaclass=SpeechClientMeta):
             method=rpc,
             request=request,
             response=response,
+            retry=retry,
+            timeout=timeout,
             metadata=metadata,
         )
 

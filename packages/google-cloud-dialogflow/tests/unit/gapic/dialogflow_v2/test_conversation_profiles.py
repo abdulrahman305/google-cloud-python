@@ -38,6 +38,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1385,12 +1386,7 @@ async def test_list_conversation_profiles_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_conversation_profiles
         ] = mock_object
@@ -1641,12 +1637,18 @@ def test_list_conversation_profiles_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_conversation_profiles(request={})
+        pager = client.list_conversation_profiles(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -1992,12 +1994,7 @@ async def test_get_conversation_profile_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_conversation_profile
         ] = mock_object
@@ -2405,12 +2402,7 @@ async def test_create_conversation_profile_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_conversation_profile
         ] = mock_object
@@ -2832,12 +2824,7 @@ async def test_update_conversation_profile_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_conversation_profile
         ] = mock_object
@@ -3244,12 +3231,7 @@ async def test_delete_conversation_profile_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_conversation_profile
         ] = mock_object
@@ -3627,12 +3609,7 @@ async def test_set_suggestion_feature_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.set_suggestion_feature_config
         ] = mock_object
@@ -4064,12 +4041,7 @@ async def test_clear_suggestion_feature_config_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.clear_suggestion_feature_config
         ] = mock_object
@@ -5041,7 +5013,9 @@ def test_create_conversation_profile_rest(request_type):
                         "suggestion_feature": {"type_": 1},
                         "enable_event_based_suggestion": True,
                         "disable_agent_query_logging": True,
+                        "enable_query_suggestion_when_no_answer": True,
                         "enable_conversation_augmented_query": True,
+                        "enable_query_suggestion_only": True,
                         "suggestion_trigger_settings": {
                             "no_smalltalk": True,
                             "only_end_user": True,
@@ -5077,6 +5051,8 @@ def test_create_conversation_profile_rest(request_type):
                     }
                 ],
                 "group_suggestion_responses": True,
+                "generators": ["generators_value1", "generators_value2"],
+                "disable_high_latency_features_sync_delivery": True,
             },
             "end_user_suggestion_config": {},
             "message_analysis_config": {
@@ -5099,6 +5075,10 @@ def test_create_conversation_profile_rest(request_type):
         "stt_config": {
             "speech_model_variant": 1,
             "model": "model_value",
+            "audio_encoding": 1,
+            "sample_rate_hertz": 1817,
+            "language_code": "language_code_value",
+            "enable_word_info": True,
             "use_timeout_based_endpointing": True,
         },
         "language_code": "language_code_value",
@@ -5542,7 +5522,9 @@ def test_update_conversation_profile_rest(request_type):
                         "suggestion_feature": {"type_": 1},
                         "enable_event_based_suggestion": True,
                         "disable_agent_query_logging": True,
+                        "enable_query_suggestion_when_no_answer": True,
                         "enable_conversation_augmented_query": True,
+                        "enable_query_suggestion_only": True,
                         "suggestion_trigger_settings": {
                             "no_smalltalk": True,
                             "only_end_user": True,
@@ -5578,6 +5560,8 @@ def test_update_conversation_profile_rest(request_type):
                     }
                 ],
                 "group_suggestion_responses": True,
+                "generators": ["generators_value1", "generators_value2"],
+                "disable_high_latency_features_sync_delivery": True,
             },
             "end_user_suggestion_config": {},
             "message_analysis_config": {
@@ -5600,6 +5584,10 @@ def test_update_conversation_profile_rest(request_type):
         "stt_config": {
             "speech_model_variant": 1,
             "model": "model_value",
+            "audio_encoding": 1,
+            "sample_rate_hertz": 1817,
+            "language_code": "language_code_value",
+            "enable_word_info": True,
             "use_timeout_based_endpointing": True,
         },
         "language_code": "language_code_value",
@@ -7725,9 +7713,35 @@ def test_parse_document_path():
     assert expected == actual
 
 
-def test_knowledge_base_path():
+def test_generator_path():
     project = "squid"
-    knowledge_base = "clam"
+    location = "clam"
+    generator = "whelk"
+    expected = "projects/{project}/locations/{location}/generators/{generator}".format(
+        project=project,
+        location=location,
+        generator=generator,
+    )
+    actual = ConversationProfilesClient.generator_path(project, location, generator)
+    assert expected == actual
+
+
+def test_parse_generator_path():
+    expected = {
+        "project": "octopus",
+        "location": "oyster",
+        "generator": "nudibranch",
+    }
+    path = ConversationProfilesClient.generator_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = ConversationProfilesClient.parse_generator_path(path)
+    assert expected == actual
+
+
+def test_knowledge_base_path():
+    project = "cuttlefish"
+    knowledge_base = "mussel"
     expected = "projects/{project}/knowledgeBases/{knowledge_base}".format(
         project=project,
         knowledge_base=knowledge_base,
@@ -7738,8 +7752,8 @@ def test_knowledge_base_path():
 
 def test_parse_knowledge_base_path():
     expected = {
-        "project": "whelk",
-        "knowledge_base": "octopus",
+        "project": "winkle",
+        "knowledge_base": "nautilus",
     }
     path = ConversationProfilesClient.knowledge_base_path(**expected)
 
@@ -7749,7 +7763,7 @@ def test_parse_knowledge_base_path():
 
 
 def test_common_billing_account_path():
-    billing_account = "oyster"
+    billing_account = "scallop"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -7759,7 +7773,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "nudibranch",
+        "billing_account": "abalone",
     }
     path = ConversationProfilesClient.common_billing_account_path(**expected)
 
@@ -7769,7 +7783,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "cuttlefish"
+    folder = "squid"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -7779,7 +7793,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "mussel",
+        "folder": "clam",
     }
     path = ConversationProfilesClient.common_folder_path(**expected)
 
@@ -7789,7 +7803,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "winkle"
+    organization = "whelk"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -7799,7 +7813,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "nautilus",
+        "organization": "octopus",
     }
     path = ConversationProfilesClient.common_organization_path(**expected)
 
@@ -7809,7 +7823,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "scallop"
+    project = "oyster"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -7819,7 +7833,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "abalone",
+        "project": "nudibranch",
     }
     path = ConversationProfilesClient.common_project_path(**expected)
 
@@ -7829,8 +7843,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "squid"
-    location = "clam"
+    project = "cuttlefish"
+    location = "mussel"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -7841,8 +7855,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "whelk",
-        "location": "octopus",
+        "project": "winkle",
+        "location": "nautilus",
     }
     path = ConversationProfilesClient.common_location_path(**expected)
 

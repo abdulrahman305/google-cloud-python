@@ -38,6 +38,7 @@ from google.api_core import (
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
 from google.api_core import operation_async  # type: ignore
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
@@ -1289,12 +1290,7 @@ async def test_list_environments_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_environments
         ] = mock_object
@@ -1544,12 +1540,16 @@ def test_list_environments_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_environments(request={})
+        pager = client.list_environments(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -1872,12 +1872,7 @@ async def test_get_environment_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_environment
         ] = mock_object
@@ -2256,12 +2251,7 @@ async def test_create_environment_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_environment
         ] = mock_object
@@ -2654,12 +2644,7 @@ async def test_update_environment_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_environment
         ] = mock_object
@@ -3050,12 +3035,7 @@ async def test_delete_environment_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_environment
         ] = mock_object
@@ -3435,12 +3415,7 @@ async def test_lookup_environment_history_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.lookup_environment_history
         ] = mock_object
@@ -3691,12 +3666,18 @@ def test_lookup_environment_history_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("name", ""),)),
         )
-        pager = client.lookup_environment_history(request={})
+        pager = client.lookup_environment_history(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -4024,12 +4005,7 @@ async def test_run_continuous_test_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.run_continuous_test
         ] = mock_object
@@ -4333,12 +4309,7 @@ async def test_list_continuous_test_results_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_continuous_test_results
         ] = mock_object
@@ -4589,12 +4560,18 @@ def test_list_continuous_test_results_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_continuous_test_results(request={})
+        pager = client.list_continuous_test_results(
+            request={}, retry=retry, timeout=timeout
+        )
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -4912,12 +4889,7 @@ async def test_deploy_flow_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.deploy_flow
         ] = mock_object
@@ -5766,6 +5738,13 @@ def test_create_environment_rest(request_type):
                             b"allowed_ca_certs_blob1",
                             b"allowed_ca_certs_blob2",
                         ],
+                        "oauth_config": {
+                            "client_id": "client_id_value",
+                            "client_secret": "client_secret_value",
+                            "token_endpoint": "token_endpoint_value",
+                            "scopes": ["scopes_value1", "scopes_value2"],
+                        },
+                        "service_agent_auth": 1,
                         "webhook_type": 1,
                         "http_method": 1,
                         "request_body": "request_body_value",
@@ -6191,6 +6170,13 @@ def test_update_environment_rest(request_type):
                             b"allowed_ca_certs_blob1",
                             b"allowed_ca_certs_blob2",
                         ],
+                        "oauth_config": {
+                            "client_id": "client_id_value",
+                            "client_secret": "client_secret_value",
+                            "token_endpoint": "token_endpoint_value",
+                            "scopes": ["scopes_value1", "scopes_value2"],
+                        },
+                        "service_agent_auth": 1,
                         "webhook_type": 1,
                         "http_method": 1,
                         "request_body": "request_body_value",

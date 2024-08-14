@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.13.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.13.0...google-cloud-orchestration-airflow-v1.13.1) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([d95af77](https://github.com/googleapis/google-cloud-python/commit/d95af77248f0935a5fe3dba1fccc75124c8b1451))
+
+## [1.13.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.12.2...google-cloud-orchestration-airflow-v1.13.0) (2024-07-10)
+
+
+### Features
+
+* add `airflow_database_retention_days` and `airflow_metadata_retention_config` to message `DataRetentionConfig` ([547a8d8](https://github.com/googleapis/google-cloud-python/commit/547a8d81c9fa7c0c6b63c6312fe4cd993d08d507))
+* add `AirflowMetadataRetentionPolicyConfig` message ([547a8d8](https://github.com/googleapis/google-cloud-python/commit/547a8d81c9fa7c0c6b63c6312fe4cd993d08d507))
+
+
+### Documentation
+
+* various documentation clarifications ([547a8d8](https://github.com/googleapis/google-cloud-python/commit/547a8d81c9fa7c0c6b63c6312fe4cd993d08d507))
+
+## [1.12.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.12.1...google-cloud-orchestration-airflow-v1.12.2) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12868](https://github.com/googleapis/google-cloud-python/issues/12868)) ([0e39c1a](https://github.com/googleapis/google-cloud-python/commit/0e39c1a0ab46757bcf80a178d9bd422f6dcb24c6))
+
 ## [1.12.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.12.0...google-cloud-orchestration-airflow-v1.12.1) (2024-03-05)
 
 

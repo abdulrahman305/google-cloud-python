@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.17.24](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.23...google-cloud-batch-v0.17.24) (2024-08-08)
+
+
+### Features
+
+* add block_project_ssh_keys field to the v1alpha job API to block project level ssh keys access to Batch created VMs ([56ec4fc](https://github.com/googleapis/google-cloud-python/commit/56ec4fcfa50454522f40561d82c700946fc2a7d1))
+* remove visibility restriction of cancel job api, allow in v1alpha ([56ec4fc](https://github.com/googleapis/google-cloud-python/commit/56ec4fcfa50454522f40561d82c700946fc2a7d1))
+
+
+### Documentation
+
+* Refine usage scope for field `task_execution` and `task_state` in `status_events` ([56ec4fc](https://github.com/googleapis/google-cloud-python/commit/56ec4fcfa50454522f40561d82c700946fc2a7d1))
+
+## [0.17.23](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.22...google-cloud-batch-v0.17.23) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([6e83a37](https://github.com/googleapis/google-cloud-python/commit/6e83a37612d9eb951cb0ef1e372ef4241f8afa59))
+
+## [0.17.22](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.21...google-cloud-batch-v0.17.22) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12864](https://github.com/googleapis/google-cloud-python/issues/12864)) ([728b307](https://github.com/googleapis/google-cloud-python/commit/728b307ed0cc497685507a219e913f002f097132))
+
 ## [0.17.21](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.20...google-cloud-batch-v0.17.21) (2024-06-05)
 
 

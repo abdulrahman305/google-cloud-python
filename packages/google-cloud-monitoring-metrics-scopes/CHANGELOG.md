@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.6.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-metrics-scopes-v1.6.4...google-cloud-monitoring-metrics-scopes-v1.6.5) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([d95af77](https://github.com/googleapis/google-cloud-python/commit/d95af77248f0935a5fe3dba1fccc75124c8b1451))
+
+## [1.6.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-metrics-scopes-v1.6.3...google-cloud-monitoring-metrics-scopes-v1.6.4) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12867](https://github.com/googleapis/google-cloud-python/issues/12867)) ([3362176](https://github.com/googleapis/google-cloud-python/commit/33621762b989106ccf85adb538cf531c513a746c))
+
 ## [1.6.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-metrics-scopes-v1.6.2...google-cloud-monitoring-metrics-scopes-v1.6.3) (2024-03-05)
 
 

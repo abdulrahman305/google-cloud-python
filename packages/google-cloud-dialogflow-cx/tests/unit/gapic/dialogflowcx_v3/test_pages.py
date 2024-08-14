@@ -29,12 +29,14 @@ import math
 from google.api_core import gapic_v1, grpc_helpers, grpc_helpers_async, path_template
 from google.api_core import api_core_version, client_options
 from google.api_core import exceptions as core_exceptions
+from google.api_core import retry as retries
 import google.auth
 from google.auth import credentials as ga_credentials
 from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.location import locations_pb2
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account
+from google.protobuf import duration_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
 from google.protobuf import json_format
 from google.protobuf import struct_pb2  # type: ignore
@@ -1225,12 +1227,7 @@ async def test_list_pages_async_use_cached_wrapped_rpc(transport: str = "grpc_as
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.list_pages
         ] = mock_object
@@ -1468,12 +1465,16 @@ def test_list_pages_pager(transport_name: str = "grpc"):
         )
 
         expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
         expected_metadata = tuple(expected_metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
         )
-        pager = client.list_pages(request={})
+        pager = client.list_pages(request={}, retry=retry, timeout=timeout)
 
         assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
 
         results = list(pager)
         assert len(results) == 6
@@ -1793,12 +1794,7 @@ async def test_get_page_async_use_cached_wrapped_rpc(transport: str = "grpc_asyn
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.get_page
         ] = mock_object
@@ -2175,12 +2171,7 @@ async def test_create_page_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.create_page
         ] = mock_object
@@ -2565,12 +2556,7 @@ async def test_update_page_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.update_page
         ] = mock_object
@@ -2939,12 +2925,7 @@ async def test_delete_page_async_use_cached_wrapped_rpc(
         )
 
         # Replace cached wrapped function with mock
-        class AwaitableMock(mock.AsyncMock):
-            def __await__(self):
-                self.await_count += 1
-                return iter([])
-
-        mock_object = AwaitableMock()
+        mock_object = mock.AsyncMock()
         client._client._transport._wrapped_methods[
             client._client._transport.delete_page
         ] = mock_object
@@ -3905,14 +3886,23 @@ def test_create_page_rest(request_type):
             ],
             "advanced_settings": {
                 "audio_export_gcs_destination": {"uri": "uri_value"},
+                "speech_settings": {
+                    "endpointer_sensitivity": 2402,
+                    "no_speech_timeout": {"seconds": 751, "nanos": 543},
+                    "use_timeout_based_endpointing": True,
+                    "models": {},
+                },
                 "dtmf_settings": {
                     "enabled": True,
                     "max_digits": 1065,
                     "finish_digit": "finish_digit_value",
+                    "interdigit_timeout_duration": {},
+                    "endpointing_timeout_duration": {},
                 },
                 "logging_settings": {
                     "enable_stackdriver_logging": True,
                     "enable_interaction_logging": True,
+                    "enable_consent_based_redaction": True,
                 },
             },
             "enable_generative_fallback": True,
@@ -4425,14 +4415,23 @@ def test_update_page_rest(request_type):
             ],
             "advanced_settings": {
                 "audio_export_gcs_destination": {"uri": "uri_value"},
+                "speech_settings": {
+                    "endpointer_sensitivity": 2402,
+                    "no_speech_timeout": {"seconds": 751, "nanos": 543},
+                    "use_timeout_based_endpointing": True,
+                    "models": {},
+                },
                 "dtmf_settings": {
                     "enabled": True,
                     "max_digits": 1065,
                     "finish_digit": "finish_digit_value",
+                    "interdigit_timeout_duration": {},
+                    "endpointing_timeout_duration": {},
                 },
                 "logging_settings": {
                     "enable_stackdriver_logging": True,
                     "enable_interaction_logging": True,
+                    "enable_consent_based_redaction": True,
                 },
             },
             "enable_generative_fallback": True,

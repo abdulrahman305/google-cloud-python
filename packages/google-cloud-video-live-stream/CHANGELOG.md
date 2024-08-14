@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.8.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-live-stream-v1.8.0...google-cloud-video-live-stream-v1.8.1) (2024-07-30)
+
+
+### Bug Fixes
+
+* Retry and timeout values do not propagate in requests during pagination ([9cdac77](https://github.com/googleapis/google-cloud-python/commit/9cdac77b20a8c9720aa668639e3ca6d1e759a2de))
+
+## [1.8.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-live-stream-v1.7.4...google-cloud-video-live-stream-v1.8.0) (2024-07-11)
+
+
+### Features
+
+* added Clip resource for performing clip cutting jobs ([3ca8bfb](https://github.com/googleapis/google-cloud-python/commit/3ca8bfb426b345aec23bceabcd366f4a0e368da6))
+* added RetentionConfig for enabling retention of output media segments ([3ca8bfb](https://github.com/googleapis/google-cloud-python/commit/3ca8bfb426b345aec23bceabcd366f4a0e368da6))
+* added StaticOverlay for embedding images the whole duration of the live stream ([3ca8bfb](https://github.com/googleapis/google-cloud-python/commit/3ca8bfb426b345aec23bceabcd366f4a0e368da6))
+
+
+### Documentation
+
+* clarify the format of key/id fields ([3ca8bfb](https://github.com/googleapis/google-cloud-python/commit/3ca8bfb426b345aec23bceabcd366f4a0e368da6))
+
+## [1.7.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-live-stream-v1.7.3...google-cloud-video-live-stream-v1.7.4) (2024-07-08)
+
+
+### Bug Fixes
+
+* Allow Protobuf 5.x ([#12870](https://github.com/googleapis/google-cloud-python/issues/12870)) ([4d16761](https://github.com/googleapis/google-cloud-python/commit/4d16761640dd8e35410b3219b7d675d7668d2f88))
+
 ## [1.7.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-live-stream-v1.7.2...google-cloud-video-live-stream-v1.7.3) (2024-03-05)
 
 
